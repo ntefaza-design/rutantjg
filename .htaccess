@@ -1,0 +1,20 @@
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Jangan lakukan rewrite jika file atau direktori fisik ada
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Route /login ke login.php secara relatif (berfungsi di subfolder maupun root domain)
+RewriteRule ^login/?$ login.php [L,QSA]
+
+# Route /logout ke logout.php secara relatif
+RewriteRule ^logout/?$ logout.php [L,QSA]
+
+# Route /berita/slug ke detail-berita.php?slug=slug
+RewriteRule ^berita/([^/]+)/?$ detail-berita.php?slug=$1 [L,QSA]
+</IfModule>
+
+# Cegah index directory listing
+Options -Indexes
