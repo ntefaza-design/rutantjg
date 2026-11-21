@@ -1,3 +1,9 @@
+<?php
+require_once __DIR__ . '/koneksi.php';
+
+// Ambil 6 berita terbaru dari database
+$query_berita = $conn->query("SELECT * FROM berita ORDER BY tanggal_dibuat DESC, id DESC LIMIT 6");
+?>
 <!DOCTYPE html>
 <html lang="id">
 
@@ -37,6 +43,7 @@
         <a href="#visi-misi" class="nav-link">Visi &amp; Misi</a>
         <a href="#pejabat" class="nav-link">Pejabat Struktural</a>
         <a href="#jadwal" class="nav-link">Jadwal</a>
+        <a href="#berita" class="nav-link">Berita</a>
         <a href="#pengaduan" class="nav-link">Pengaduan</a>
         <a href="#sosmed" class="nav-link">Sosial Media Kami</a>
         <a href="#kontak" class="nav-link">Kontak &amp; Lokasi</a>
@@ -395,6 +402,67 @@
               style="width: 100%; max-height: 520px; object-fit: contain; display: block; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.06);" />
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== BERITA TERKINI ===== -->
+  <section class="section" id="berita">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Kabar &amp; Informasi</span>
+        <h2 class="section-title">Berita Terkini</h2>
+        <p class="section-desc">Informasi terbaru seputar kegiatan, pembinaan, dan pelayanan di Rutan Tanjung Kelas IIB</p>
+      </div>
+
+      <div class="berita-grid">
+        <?php if ($query_berita && $query_berita->num_rows > 0): ?>
+          <?php while ($b = $query_berita->fetch_assoc()): 
+            $gambar_src = (!empty($b['gambar']) && file_exists(__DIR__ . '/uploads/berita/' . $b['gambar']))
+                          ? 'uploads/berita/' . htmlspecialchars($b['gambar'])
+                          : 'gambar atau poster/header rutan.jpg';
+            $cuplikan = strip_tags($b['isi']);
+            if (mb_strlen($cuplikan) > 130) {
+              $cuplikan = mb_substr($cuplikan, 0, 130) . '...';
+            }
+            $link_detail = 'detail-berita.php?slug=' . urlencode($b['slug']);
+          ?>
+            <article class="berita-card">
+              <div class="berita-card-img-wrap">
+                <img src="<?= $gambar_src ?>" alt="<?= htmlspecialchars($b['judul']) ?>" class="berita-card-img" loading="lazy">
+                <span class="berita-date-badge"><?= format_tanggal_indo($b['tanggal_dibuat']) ?></span>
+              </div>
+              <div class="berita-card-body">
+                <div class="berita-meta">
+                  <span class="berita-author">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <?= htmlspecialchars($b['penulis']) ?>
+                  </span>
+                </div>
+                <h3 class="berita-card-title">
+                  <a href="<?= $link_detail ?>"><?= htmlspecialchars($b['judul']) ?></a>
+                </h3>
+                <p class="berita-card-desc"><?= htmlspecialchars($cuplikan) ?></p>
+                <div class="berita-card-footer">
+                  <a href="<?= $link_detail ?>" class="btn-read-more">
+                    Baca Selengkapnya
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </article>
+          <?php endwhile; ?>
+        <?php else: ?>
+          <div class="berita-empty">
+            <p>Belum ada berita yang dipublikasikan saat ini.</p>
+          </div>
+        <?php endif; ?>
       </div>
     </div>
   </section>
