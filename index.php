@@ -5,6 +5,10 @@ require_once __DIR__ . '/koneksi.php';
 $headline_q = $conn->query("SELECT id, judul, slug, tanggal_dibuat FROM berita ORDER BY tanggal_dibuat DESC, id DESC LIMIT 1");
 $headline = ($headline_q && $headline_q->num_rows > 0) ? $headline_q->fetch_assoc() : null;
 
+// Ambil 6 berita terbaru untuk section Sorotan di homepage
+$sorotan_q = $conn->query("SELECT id, judul, slug, gambar, penulis, tanggal_dibuat FROM berita ORDER BY tanggal_dibuat DESC, id DESC LIMIT 6");
+$sorotan_rows = ($sorotan_q && $sorotan_q->num_rows > 0) ? $sorotan_q->fetch_all(MYSQLI_ASSOC) : [];
+
 // Ambil jadwal pelayanan dari database
 $stmt_jk = $conn->prepare("SELECT * FROM jadwal_pelayanan WHERE kategori = 'kunjungan' ORDER BY urutan ASC, id ASC");
 $stmt_jk->execute();
@@ -30,6 +34,12 @@ while ($row_c = $res_cp->fetch_assoc()) {
     }
 }
 $stmt_cp->close();
+
+// Ambil daftar pop-up ads yang aktif
+$stmt_pop = $conn->prepare("SELECT * FROM popup_ads WHERE is_aktif = 1 ORDER BY urutan ASC, id ASC");
+$stmt_pop->execute();
+$popup_ads_rows = $stmt_pop->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt_pop->close();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -121,47 +131,40 @@ $stmt_cp->close();
         </a>
       </div>
 
-      <!-- Kapsul Desain Minimalis & Transparan: BERITA TERKINI di Layar Tengah -->
-      <div class="hero-berita-wrapper">
-        <a href="berita.php" class="hero-berita-capsule" title="Klik untuk membuka Berita &amp; Informasi Rutan Tanjung">
-          <div class="hero-berita-badge">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10l6 6v8a2 2 0 0 1-2 2z"></path>
-              <polyline points="13 2 13 8 19 8"></polyline>
-              <line x1="8" y1="13" x2="16" y2="13"></line>
-              <line x1="8" y1="17" x2="13" y2="17"></line>
-            </svg>
-            <span>BERITA TERKINI</span>
-            <span class="hero-berita-badge-pulse"></span>
-          </div>
 
-          <div class="hero-berita-text-wrap">
-            <span class="hero-berita-title">
-              <?= !empty($headline['judul']) ? htmlspecialchars($headline['judul']) : 'Kabar Terkini &amp; Informasi Pelayanan Rutan Tanjung Kelas IIB' ?>
-            </span>
-            <div class="hero-berita-sub">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-              <span><?= !empty($headline['tanggal_dibuat']) ? format_tanggal_indo($headline['tanggal_dibuat']) : 'Diperbarui Rutin' ?></span>
-            </div>
-          </div>
-
-          <div class="hero-berita-btn">
-            <span>Buka Portal</span>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
-          </div>
-        </a>
-      </div>
     </div>
 
   </section>
+
+  <!-- ===== SOROTAN BERITA ===== -->
+  <?php if (!empty($sorotan_rows)): ?>
+  <section class="section sorotan-section" id="sorotan">
+    <div class="container">
+      <div class="sorotan-header">
+        <h2 class="sorotan-title">Sorotan Berita</h2>
+        <a href="berita.php" class="sorotan-lihat-semua">Lihat Semua →</a>
+      </div>
+      <div class="sorotan-grid">
+        <?php foreach ($sorotan_rows as $idx => $sb):
+          $sb_gambar = (!empty($sb['gambar']) && file_exists(__DIR__ . '/uploads/berita/' . $sb['gambar']))
+                       ? 'uploads/berita/' . htmlspecialchars($sb['gambar'])
+                       : 'gambar atau poster/header rutan.jpg';
+          $sb_judul  = htmlspecialchars($sb['judul']);
+          $sb_slug   = htmlspecialchars($sb['slug']);
+          $sb_penulis = htmlspecialchars($sb['penulis'] ?? 'Humas');
+        ?>
+        <a href="detail-berita.php?slug=<?= $sb_slug ?>" class="sorotan-item" title="<?= $sb_judul ?>">
+          <div class="sorotan-thumb-wrap">
+            <img src="<?= $sb_gambar ?>" alt="<?= $sb_judul ?>" class="sorotan-thumb" loading="<?= $idx < 3 ? 'eager' : 'lazy' ?>">
+          </div>
+          <h3 class="sorotan-item-judul"><?= $sb_judul ?></h3>
+          <span class="sorotan-item-kategori"><?= $sb_penulis ?></span>
+        </a>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  </section>
+  <?php endif; ?>
 
   <!-- ===== TENTANG KAMI ===== -->
   <section class="section" id="tentang">
@@ -941,61 +944,56 @@ $stmt_cp->close();
   </div>
 
   <!-- ===== POPUP ADS ON LOAD ===== -->
+  <?php if (!empty($popup_ads_rows)): ?>
   <div id="popupAds" class="popup-ads-overlay" onclick="closePopupAds()">
     <div class="popup-ads-dialog" onclick="event.stopPropagation()">
       <!-- Tombol Tutup X -->
       <button class="popup-ads-close" onclick="closePopupAds()" aria-label="Tutup Pop-up">&#x2715;</button>
 
-      <!-- Slides Gambar dari folder pop up ads -->
+      <!-- Slides Gambar dari database -->
       <div class="popup-ads-slides-wrap">
-        <div class="popup-ads-slide active">
-          <img src="pop up ads/Selamat Datang di Rutan Tanjung.png" alt="Selamat Datang di Rutan Tanjung"
-            class="popup-ads-img" />
+        <?php foreach ($popup_ads_rows as $idx => $pop):
+          $p_img = htmlspecialchars($pop['gambar']);
+          $p_link = trim($pop['link_url'] ?? '');
+          $p_alt = !empty($pop['keterangan']) ? htmlspecialchars($pop['keterangan']) : 'Informasi Rutan Tanjung';
+        ?>
+        <div class="popup-ads-slide <?= $idx === 0 ? 'active' : '' ?>">
+          <?php if (!empty($p_link)): ?>
+            <a href="<?= htmlspecialchars($p_link) ?>" target="_blank" rel="noopener noreferrer" style="display:block; width:100%; height:100%; cursor:pointer;" title="Klik untuk membuka link">
+              <img src="<?= $p_img ?>" alt="<?= $p_alt ?>" class="popup-ads-img" />
+            </a>
+          <?php else: ?>
+            <img src="<?= $p_img ?>" alt="<?= $p_alt ?>" class="popup-ads-img" />
+          <?php endif; ?>
         </div>
-        <div class="popup-ads-slide">
-          <img src="pop up ads/IMG-20261113-WA0163.jpg" alt="Info Rutan Tanjung 1" class="popup-ads-img" />
-        </div>
-        <div class="popup-ads-slide">
-          <img src="pop up ads/IMG-20261113-WA0164.jpg" alt="Info Rutan Tanjung 2" class="popup-ads-img" />
-        </div>
-        <div class="popup-ads-slide">
-          <img src="pop up ads/IMG-20261113-WA0165.jpg" alt="Info Rutan Tanjung 3" class="popup-ads-img" />
-        </div>
-        <div class="popup-ads-slide">
-          <img src="pop up ads/IMG-20261113-WA0166.jpg" alt="Info Rutan Tanjung 4" class="popup-ads-img" />
-        </div>
-        <div class="popup-ads-slide">
-          <img src="pop up ads/IMG-20261113-WA0167.jpg" alt="Info Rutan Tanjung 5" class="popup-ads-img" />
-        </div>
-        <div class="popup-ads-slide">
-          <img src="pop up ads/gratifikasi(1).png" alt="Tolak Gratifikasi Rutan Tanjung" class="popup-ads-img" />
-        </div>
+        <?php endforeach; ?>
       </div>
 
+      <?php if (count($popup_ads_rows) > 1): ?>
       <!-- Navigasi Slide -->
       <button class="popup-ads-arrow prev" onclick="changePopupSlide(-1, event)"
         aria-label="Sebelumnya">&#x2B9C;</button>
       <button class="popup-ads-arrow next" onclick="changePopupSlide(1, event)"
         aria-label="Selanjutnya">&#x2B9E;</button>
+      <?php endif; ?>
 
       <!-- Footer Pop-up -->
       <div class="popup-ads-footer">
-        <div class="popup-ads-counter" id="popupCounter">1 / 7</div>
+        <div class="popup-ads-counter" id="popupCounter">1 / <?= count($popup_ads_rows) ?></div>
+        <?php if (count($popup_ads_rows) > 1): ?>
         <div class="popup-ads-dots">
-          <span class="popup-dot active" onclick="goToPopupSlide(0, event)"></span>
-          <span class="popup-dot" onclick="goToPopupSlide(1, event)"></span>
-          <span class="popup-dot" onclick="goToPopupSlide(2, event)"></span>
-          <span class="popup-dot" onclick="goToPopupSlide(3, event)"></span>
-          <span class="popup-dot" onclick="goToPopupSlide(4, event)"></span>
-          <span class="popup-dot" onclick="goToPopupSlide(5, event)"></span>
-          <span class="popup-dot" onclick="goToPopupSlide(6, event)"></span>
+          <?php foreach ($popup_ads_rows as $idx => $pop): ?>
+          <span class="popup-dot <?= $idx === 0 ? 'active' : '' ?>" onclick="goToPopupSlide(<?= $idx ?>, event)"></span>
+          <?php endforeach; ?>
         </div>
+        <?php endif; ?>
         <button class="popup-ads-close-text" onclick="closePopupAds()">
           &#x2715; Tutup (Tap di mana saja)
         </button>
       </div>
     </div>
   </div>
+  <?php endif; ?>
 
   <!-- ===== LIGHTBOX FOTO PEJABAT ===== -->
   <div id="lightbox" onclick="closeLightbox()" style="
@@ -1096,15 +1094,11 @@ $stmt_cp->close();
       }
     });
 
-    // Otomatis muncul saat web dibuka — hanya sekali per sesi kunjungan
+    // Otomatis muncul saat web dibuka — selalu muncul kembali saat halaman di-refresh
     window.addEventListener('load', () => {
-      const sudahMuncul = sessionStorage.getItem('popupSudahMuncul');
-      if (!sudahMuncul) {
-        setTimeout(() => {
-          openPopupAds();
-          sessionStorage.setItem('popupSudahMuncul', '1');
-        }, 400);
-      }
+      setTimeout(() => {
+        openPopupAds();
+      }, 400);
     });
   </script>
 </body>

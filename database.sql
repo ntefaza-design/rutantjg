@@ -110,3 +110,30 @@ INSERT INTO `pengaturan_jadwal` (`id`, `kunci`, `nilai`) VALUES
 (1, 'catatan_penitipan', 'Barang/makanan wajib sesuai ketentuan yang berlaku. Lihat poster syarat di bawah.'),
 (2, 'catatan_kunjungan', 'Pengunjung wajib mematuhi ketentuan yang berlaku. Lihat poster syarat di bawah.')
 ON DUPLICATE KEY UPDATE `nilai` = VALUES(`nilai`);
+
+-- --------------------------------------------------------
+-- 5. Struktur Tabel `popup_ads`
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `popup_ads` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `gambar` VARCHAR(255) NOT NULL,
+  `link_url` VARCHAR(500) DEFAULT NULL,
+  `is_aktif` TINYINT(1) DEFAULT 1,
+  `urutan` INT DEFAULT 1,
+  `keterangan` VARCHAR(255) DEFAULT '',
+  `dibuat_pada` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `diperbarui_pada` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Data Awal `popup_ads`
+-- --------------------------------------------------------
+INSERT INTO `popup_ads` (`id`, `gambar`, `link_url`, `is_aktif`, `urutan`, `keterangan`) VALUES
+(1, 'pop up ads/Selamat Datang di Rutan Tanjung.png', '', 1, 1, 'Selamat Datang di Rutan Tanjung'),
+(2, 'pop up ads/IMG-20261113-WA0163.jpg', '', 1, 2, 'Info Rutan Tanjung 1'),
+(3, 'pop up ads/IMG-20261113-WA0164.jpg', '', 1, 3, 'Info Rutan Tanjung 2'),
+(4, 'pop up ads/IMG-20261113-WA0165.jpg', '', 1, 4, 'Info Rutan Tanjung 3'),
+(5, 'pop up ads/IMG-20261113-WA0166.jpg', '', 1, 5, 'Info Rutan Tanjung 4'),
+(6, 'pop up ads/IMG-20261113-WA0167.jpg', '', 1, 6, 'Info Rutan Tanjung 5'),
+(7, 'pop up ads/gratifikasi(1).png', '', 1, 7, 'Tolak Gratifikasi Rutan Tanjung')
+ON DUPLICATE KEY UPDATE `gambar` = VALUES(`gambar`);

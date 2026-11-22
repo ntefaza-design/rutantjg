@@ -235,8 +235,10 @@ if ($action === 'hapus' && $edit_id > 0) {
     exit;
 }
 
-// Ambil total berita untuk statistik
+// Ambil total berita & pop-up ads untuk statistik
 $stat_berita = $conn->query("SELECT COUNT(*) as total FROM berita")->fetch_assoc()['total'] ?? 0;
+$stat_popup_aktif = $conn->query("SELECT COUNT(*) as total FROM popup_ads WHERE is_aktif = 1")->fetch_assoc()['total'] ?? 0;
+$stat_popup_total = $conn->query("SELECT COUNT(*) as total FROM popup_ads")->fetch_assoc()['total'] ?? 0;
 
 // Ambil data untuk form edit jika action=edit
 $data_edit = null;
@@ -255,9 +257,165 @@ if ($action === 'edit' && $edit_id > 0) {
 }
 
 // ==========================================
-// PENGATURAN TAB (berita | jadwal)
+// PENGATURAN TAB (berita | jadwal | popup)
 // ==========================================
 $tab = $_GET['tab'] ?? 'berita';
+
+// ==========================================
+// PROSES CRUD: POPUP ADS
+// ==========================================
+$popup_upload_dir = __DIR__ . '/../uploads/popup/';
+if (!is_dir($popup_upload_dir)) {
+    mkdir($popup_upload_dir, 0755, true);
+}
+
+// Tambah gambar popup baru
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah_popup'])) {
+    if (!isset($_FILES['popup_gambar']) || $_FILES['popup_gambar']['error'] !== UPLOAD_ERR_OK) {
+        $_SESSION['flash_error'] = 'File gambar wajib diunggah!';
+        header("Location: index.php?tab=popup"); exit;
+    }
+    $file_tmp  = $_FILES['popup_gambar']['tmp_name'];
+    $file_name = $_FILES['popup_gambar']['name'];
+    $file_size = $_FILES['popup_gambar']['size'];
+    $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+    if (!in_array($file_ext, ['jpg','jpeg','png','webp'])) {
+        $_SESSION['flash_error'] = 'Format tidak valid! Gunakan JPG, PNG, atau WEBP.';
+        header("Location: index.php?tab=popup"); exit;
+    }
+    if ($file_size > 5 * 1024 * 1024) {
+        $_SESSION['flash_error'] = 'Ukuran file terlalu besar! Maksimal 5MB.';
+        header("Location: index.php?tab=popup"); exit;
+    }
+    $nama_file  = 'popup-' . time() . '-' . uniqid() . '.' . $file_ext;
+    $tujuan     = $popup_upload_dir . $nama_file;
+    if (!move_uploaded_file($file_tmp, $tujuan)) {
+        $_SESSION['flash_error'] = 'Gagal mengunggah file ke server.';
+        header("Location: index.php?tab=popup"); exit;
+    }
+    $link_url    = trim($_POST['popup_link_url'] ?? '');
+    $keterangan  = trim($_POST['popup_keterangan'] ?? '');
+    $is_aktif    = isset($_POST['popup_is_aktif']) ? 1 : 0;
+    $urutan      = max(1, (int)($_POST['popup_urutan'] ?? 1));
+    $gambar_path = 'uploads/popup/' . $nama_file;
+    $stmt_p = $conn->prepare("INSERT INTO popup_ads (gambar, link_url, is_aktif, urutan, keterangan) VALUES (?, ?, ?, ?, ?)");
+    $stmt_p->bind_param("ssiss", $gambar_path, $link_url, $is_aktif, $urutan, $keterangan);
+    if ($stmt_p->execute()) {
+        $_SESSION['flash_sukses'] = 'Gambar pop-up berhasil ditambahkan!';
+    } else {
+        @unlink($tujuan);
+        $_SESSION['flash_error'] = 'Gagal menyimpan ke database: ' . $stmt_p->error;
+    }
+    $stmt_p->close();
+    header("Location: index.php?tab=popup"); exit;
+}
+
+// Edit popup (update link, status, urutan, keterangan — gambar opsional)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit_popup'])) {
+    $pid       = (int)($_POST['popup_id'] ?? 0);
+    $link_url  = trim($_POST['popup_link_url'] ?? '');
+    $keterangan= trim($_POST['popup_keterangan'] ?? '');
+    $is_aktif  = isset($_POST['popup_is_aktif']) ? 1 : 0;
+    $urutan    = max(1, (int)($_POST['popup_urutan'] ?? 1));
+    if ($pid <= 0) {
+        $_SESSION['flash_error'] = 'ID popup tidak valid!';
+        header("Location: index.php?tab=popup"); exit;
+    }
+    // Ambil gambar lama
+    $stmt_old = $conn->prepare("SELECT gambar FROM popup_ads WHERE id = ? LIMIT 1");
+    $stmt_old->bind_param("i", $pid);
+    $stmt_old->execute();
+    $old_row = $stmt_old->get_result()->fetch_assoc();
+    $stmt_old->close();
+    $gambar_path = $old_row['gambar'] ?? '';
+    // Proses ganti gambar jika ada file baru
+    if (isset($_FILES['popup_gambar']) && $_FILES['popup_gambar']['error'] === UPLOAD_ERR_OK) {
+        $file_tmp  = $_FILES['popup_gambar']['tmp_name'];
+        $file_name = $_FILES['popup_gambar']['name'];
+        $file_size = $_FILES['popup_gambar']['size'];
+        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+        if (!in_array($file_ext, ['jpg','jpeg','png','webp'])) {
+            $_SESSION['flash_error'] = 'Format tidak valid! Gunakan JPG, PNG, atau WEBP.';
+            header("Location: index.php?tab=popup"); exit;
+        }
+        if ($file_size > 5 * 1024 * 1024) {
+            $_SESSION['flash_error'] = 'Ukuran file terlalu besar! Maksimal 5MB.';
+            header("Location: index.php?tab=popup"); exit;
+        }
+        $nama_file   = 'popup-' . time() . '-' . uniqid() . '.' . $file_ext;
+        $tujuan      = $popup_upload_dir . $nama_file;
+        if (move_uploaded_file($file_tmp, $tujuan)) {
+            // Hapus gambar lama jika dari folder uploads/popup
+            if (!empty($gambar_path) && str_starts_with($gambar_path, 'uploads/popup/')) {
+                $old_path = __DIR__ . '/../' . $gambar_path;
+                if (file_exists($old_path)) @unlink($old_path);
+            }
+            $gambar_path = 'uploads/popup/' . $nama_file;
+        }
+    }
+    $stmt_upd = $conn->prepare("UPDATE popup_ads SET gambar=?, link_url=?, is_aktif=?, urutan=?, keterangan=? WHERE id=?");
+    $stmt_upd->bind_param("ssiisi", $gambar_path, $link_url, $is_aktif, $urutan, $keterangan, $pid);
+    if ($stmt_upd->execute()) {
+        $_SESSION['flash_sukses'] = 'Pop-up berhasil diperbarui!';
+    } else {
+        $_SESSION['flash_error'] = 'Gagal memperbarui: ' . $stmt_upd->error;
+    }
+    $stmt_upd->close();
+    header("Location: index.php?tab=popup"); exit;
+}
+
+// Hapus popup
+if (isset($_GET['hapus_popup']) && $tab === 'popup') {
+    $pid_del = (int)$_GET['hapus_popup'];
+    if ($pid_del > 0) {
+        $stmt_gd = $conn->prepare("SELECT gambar FROM popup_ads WHERE id = ? LIMIT 1");
+        $stmt_gd->bind_param("i", $pid_del);
+        $stmt_gd->execute();
+        $del_row = $stmt_gd->get_result()->fetch_assoc();
+        $stmt_gd->close();
+        if ($del_row && str_starts_with($del_row['gambar'], 'uploads/popup/')) {
+            $del_path = __DIR__ . '/../' . $del_row['gambar'];
+            if (file_exists($del_path)) @unlink($del_path);
+        }
+        $stmt_del = $conn->prepare("DELETE FROM popup_ads WHERE id = ?");
+        $stmt_del->bind_param("i", $pid_del);
+        if ($stmt_del->execute()) {
+            $_SESSION['flash_sukses'] = 'Pop-up berhasil dihapus!';
+        } else {
+            $_SESSION['flash_error'] = 'Gagal menghapus: ' . $stmt_del->error;
+        }
+        $stmt_del->close();
+    }
+    header("Location: index.php?tab=popup"); exit;
+}
+
+// Toggle aktif/nonaktif
+if (isset($_GET['toggle_popup']) && $tab === 'popup') {
+    $pid_tog = (int)$_GET['toggle_popup'];
+    if ($pid_tog > 0) {
+        $stmt_tog = $conn->prepare("UPDATE popup_ads SET is_aktif = 1 - is_aktif WHERE id = ?");
+        $stmt_tog->bind_param("i", $pid_tog);
+        $stmt_tog->execute();
+        $stmt_tog->close();
+        $_SESSION['flash_sukses'] = 'Status pop-up berhasil diubah!';
+    }
+    header("Location: index.php?tab=popup"); exit;
+}
+
+// Data edit popup
+$popup_edit_data = null;
+$popup_edit_id   = isset($_GET['edit_popup']) ? (int)$_GET['edit_popup'] : 0;
+if ($popup_edit_id > 0 && $tab === 'popup') {
+    $stmt_pe = $conn->prepare("SELECT * FROM popup_ads WHERE id = ? LIMIT 1");
+    $stmt_pe->bind_param("i", $popup_edit_id);
+    $stmt_pe->execute();
+    $popup_edit_data = $stmt_pe->get_result()->fetch_assoc();
+    $stmt_pe->close();
+}
+
+// Ambil semua popup untuk tampilan tab
+$list_popup = $conn->query("SELECT * FROM popup_ads ORDER BY urutan ASC, id ASC");
+$list_popup_rows = $list_popup ? $list_popup->fetch_all(MYSQLI_ASSOC) : [];
 
 // ==========================================
 // PROSES CRUD: JADWAL PELAYANAN
@@ -1141,6 +1299,160 @@ $stmt_cp_val->close();
       align-items: center;
       gap: 5px;
     }
+
+    /* Pop-up Ads Admin Specific Styles */
+    .switch-toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 6px;
+    }
+    .switch-toggle {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+    .switch-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--gray-200);
+      transition: .3s;
+      border-radius: 30px;
+    }
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .switch-toggle input:checked + .switch-slider {
+      background-color: var(--success);
+    }
+    .switch-toggle input:checked + .switch-slider:before {
+      transform: translateX(24px);
+    }
+    .switch-label-text {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--gray-800);
+    }
+
+    /* Pop-up Preview Grid (Galeri Pratinjau Aktif) */
+    .popup-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      padding: 24px;
+    }
+    .popup-preview-card {
+      background: var(--gray-50);
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .popup-preview-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .popup-preview-img-wrap {
+      width: 100%;
+      height: 180px;
+      background: #000;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .popup-preview-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: transform 0.3s;
+    }
+    .popup-preview-img-wrap:hover img {
+      transform: scale(1.05);
+    }
+    .popup-preview-meta {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+    .popup-preview-meta-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--gray-800);
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .popup-preview-meta-link {
+      font-size: 0.78rem;
+      color: var(--primary);
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Badge & Quick Action */
+    .btn-status-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .btn-status-toggle.active {
+      background: rgba(46, 133, 64, 0.12);
+      color: var(--success);
+      border-color: rgba(46, 133, 64, 0.25);
+    }
+    .btn-status-toggle.active:hover {
+      background: rgba(46, 133, 64, 0.2);
+    }
+    .btn-status-toggle.inactive {
+      background: rgba(229, 62, 62, 0.1);
+      color: var(--danger);
+      border-color: rgba(229, 62, 62, 0.2);
+    }
+    .btn-status-toggle.inactive:hover {
+      background: rgba(229, 62, 62, 0.18);
+    }
   </style>
 </head>
 <body>
@@ -1229,6 +1541,20 @@ $stmt_cp_val->close();
       </div>
 
       <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(124, 58, 237, 0.12); color:#7c3aed;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <h4>Pop-up Ads</h4>
+          <div class="stat-value" style="font-size:1.35rem;"><?= $stat_popup_aktif ?> <span style="font-size:0.85rem; font-weight:600; color:var(--gray-600);">Aktif (<?= $stat_popup_total ?> total)</span></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
         <div class="stat-icon gold">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -1259,7 +1585,7 @@ $stmt_cp_val->close();
 
     <!-- Tab Navigasi Admin -->
     <div class="admin-tabs-nav">
-      <a href="index.php?tab=berita" class="admin-tab-item <?= ($tab !== 'jadwal') ? 'active' : '' ?>">
+      <a href="index.php?tab=berita" class="admin-tab-item <?= ($tab === 'berita') ? 'active' : '' ?>">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
           <polyline points="14 2 14 8 20 8"></polyline>
@@ -1278,9 +1604,17 @@ $stmt_cp_val->close();
         </svg>
         Kelola Jadwal Pelayanan
       </a>
+      <a href="index.php?tab=popup" class="admin-tab-item <?= ($tab === 'popup') ? 'active' : '' ?>">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="8" y1="21" x2="16" y2="21"></line>
+          <line x1="12" y1="17" x2="12" y2="21"></line>
+        </svg>
+        Kelola Pop-up Ads
+      </a>
     </div>
 
-    <?php if ($tab !== 'jadwal'): ?>
+    <?php if ($tab === 'berita'): ?>
     <!-- ============================================== -->
     <!-- TAMPILAN 1: FORM TAMBAH BERITA -->
     <!-- ============================================== -->
@@ -1870,6 +2204,276 @@ $stmt_cp_val->close();
 
     <?php endif; // Akhir Tab Jadwal ?>
 
+    <!-- ============================================== -->
+    <!-- TAB: KELOLA POP-UP ADS -->
+    <!-- ============================================== -->
+    <?php if ($tab === 'popup'): ?>
+
+      <!-- 1. PRATINJAU POP-UP YANG SEDANG AKTIF -->
+      <div class="content-box" style="margin-bottom: 28px;">
+        <div class="content-box-header">
+          <div class="content-box-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            Pratinjau Pop-up Ads Aktif di Halaman Utama (<?= count(array_filter($list_popup_rows, fn($p) => (int)$p['is_aktif'] === 1)) ?> Gambar Aktif)
+          </div>
+          <span style="font-size:0.85rem; color:var(--gray-600);">
+            Gambar di bawah ini akan otomatis muncul sebagai slide pop-up saat pengunjung membuka atau me-refresh homepage.
+          </span>
+        </div>
+
+        <?php 
+        $active_popups = array_values(array_filter($list_popup_rows, fn($p) => (int)$p['is_aktif'] === 1));
+        if (!empty($active_popups)): 
+        ?>
+          <div class="popup-preview-grid">
+            <?php foreach ($active_popups as $idx => $p): 
+              $p_img_url = '../' . htmlspecialchars($p['gambar']);
+            ?>
+              <div class="popup-preview-card">
+                <div class="popup-preview-img-wrap" onclick="openImageModal('<?= $p_img_url ?>')" title="Klik untuk memperbesar gambar">
+                  <img src="<?= $p_img_url ?>" alt="<?= htmlspecialchars($p['keterangan'] ?? 'Popup') ?>">
+                  <span style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.7); color:#fff; font-size:0.75rem; font-weight:700; padding:3px 8px; border-radius:4px;">
+                    Slide #<?= $idx + 1 ?> (Urutan: <?= (int)$p['urutan'] ?>)
+                  </span>
+                </div>
+                <div class="popup-preview-meta">
+                  <div class="popup-preview-meta-title" title="<?= htmlspecialchars($p['keterangan'] ?: 'Pop-up #' . $p['id']) ?>">
+                    <?= htmlspecialchars($p['keterangan'] ?: 'Pop-up #' . $p['id']) ?>
+                  </div>
+                  <?php if (!empty($p['link_url'])): ?>
+                    <a href="<?= htmlspecialchars($p['link_url']) ?>" target="_blank" rel="noopener" class="popup-preview-meta-link" title="<?= htmlspecialchars($p['link_url']) ?>">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                      <?= htmlspecialchars($p['link_url']) ?>
+                    </a>
+                  <?php else: ?>
+                    <span style="font-size:0.75rem; color:var(--gray-400);">Tanpa link tujuan</span>
+                  <?php endif; ?>
+                </div>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        <?php else: ?>
+          <div class="empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+            <h3 style="font-size:1.05rem; margin-bottom:6px; color:var(--gray-800);">Tidak Ada Pop-up yang Sedang Aktif</h3>
+            <p style="font-size:0.88rem; color:var(--gray-600);">Semua pop-up sedang dinonaktifkan. Pengunjung tidak akan melihat pop-up saat membuka homepage. Aktifkan status di tabel bawah atau unggah gambar baru.</p>
+          </div>
+        <?php endif; ?>
+      </div>
+
+      <!-- 2. FORM TAMBAH / EDIT POP-UP ADS -->
+      <div class="content-box" style="margin-bottom: 28px;">
+        <div class="content-box-header">
+          <div class="content-box-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <?php if ($popup_edit_data): ?>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              <?php else: ?>
+                <path d="M12 5v14M5 12h14"></path>
+              <?php endif; ?>
+            </svg>
+            <?= $popup_edit_data ? 'Edit Pengaturan Pop-up #' . (int)$popup_edit_data['id'] : 'Unggah &amp; Tambah Pop-up Ad Baru' ?>
+          </div>
+          <?php if ($popup_edit_data): ?>
+            <a href="index.php?tab=popup" class="btn-secondary" style="font-size:0.85rem;">
+              ✕ Batal Edit (Tambah Baru)
+            </a>
+          <?php endif; ?>
+        </div>
+
+        <form action="index.php?tab=popup" method="POST" enctype="multipart/form-data" class="form-container">
+          <input type="hidden" name="<?= $popup_edit_data ? 'proses_edit_popup' : 'proses_tambah_popup' ?>" value="1">
+          <?php if ($popup_edit_data): ?>
+            <input type="hidden" name="popup_id" value="<?= (int)$popup_edit_data['id'] ?>">
+          <?php endif; ?>
+
+          <div class="form-grid">
+            <div>
+              <!-- Judul / Keterangan Pop-up -->
+              <div class="form-group">
+                <label class="form-label">Judul / Keterangan Pop-up <span style="font-weight:400;color:var(--gray-600);">(opsional)</span></label>
+                <input type="text" name="popup_keterangan" class="form-input" placeholder="Contoh: Banner Selamat Datang, Maklumat Pelayanan, dll." value="<?= htmlspecialchars($popup_edit_data['keterangan'] ?? '') ?>">
+                <div class="form-help">Label deskriptif dan teks penjelas gambar pop-up.</div>
+              </div>
+
+              <!-- Link URL Tujuan -->
+              <div class="form-group">
+                <label class="form-label">URL / Link Tujuan Saat Gambar Diklik <span style="font-weight:400;color:var(--gray-600);">(opsional)</span></label>
+                <input type="text" name="popup_link_url" class="form-input" placeholder="Contoh: https://kemenimipas.go.id atau berita.php" value="<?= htmlspecialchars($popup_edit_data['link_url'] ?? '') ?>">
+                <div class="form-help">Jika diisi, pengunjung yang mengklik gambar pop-up di homepage akan otomatis diarahkan ke URL tujuan ini. Kosongkan jika hanya ingin menampilkan gambar.</div>
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                <!-- Urutan Tampilan -->
+                <div class="form-group">
+                  <label class="form-label">Urutan Tampilan</label>
+                  <input type="number" name="popup_urutan" class="form-input" min="1" value="<?= (int)($popup_edit_data['urutan'] ?? 1) ?>" required>
+                  <div class="form-help">Nomor urut slide (1 = slide pertama).</div>
+                </div>
+
+                <!-- Toggle Switch Status Aktif -->
+                <div class="form-group">
+                  <label class="form-label">Status Pop-up</label>
+                  <div class="switch-toggle-wrap" style="padding-top:6px;">
+                    <label class="switch-toggle">
+                      <input type="checkbox" name="popup_is_aktif" value="1" id="popupAktifSwitch" <?= (!isset($popup_edit_data) || (int)$popup_edit_data['is_aktif'] === 1) ? 'checked' : '' ?> onchange="updateSwitchLabel(this)">
+                      <span class="switch-slider"></span>
+                    </label>
+                    <span class="switch-label-text" id="switchLabelText">
+                      <?= (!isset($popup_edit_data) || (int)$popup_edit_data['is_aktif'] === 1) ? 'Aktif (Ditampilkan)' : 'Nonaktif (Disembunyikan)' ?>
+                    </span>
+                  </div>
+                  <div class="form-help">Bisa dimatikan kapan saja tanpa menghapus gambar.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload File Gambar & Live Preview -->
+            <div>
+              <div class="form-group">
+                <label class="form-label">
+                  File Gambar Pop-up <?= !$popup_edit_data ? '<span class="req">*</span>' : '<span style="font-weight:400;color:var(--gray-600);">(Pilih jika ingin ganti)</span>' ?>
+                </label>
+                <div class="upload-box" onclick="document.getElementById('popupGambarInput').click()" style="padding:16px;">
+                  <input type="file" name="popup_gambar" id="popupGambarInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewPopupImage(this)" <?= !$popup_edit_data ? 'required' : '' ?>>
+                  
+                  <?php if ($popup_edit_data && !empty($popup_edit_data['gambar'])): ?>
+                    <!-- Gambar yang sedang aktif sekarang -->
+                    <div id="popupExistingArea">
+                      <img src="../<?= htmlspecialchars($popup_edit_data['gambar']) ?>" alt="Existing" style="max-height:150px; max-width:100%; border-radius:8px; margin-bottom:8px; object-fit:contain; display:block; margin:0 auto;">
+                      <span style="font-size:0.75rem; color:var(--gray-600); display:block;">Gambar saat ini. Klik untuk memilih gambar baru pengganti.</span>
+                    </div>
+                  <?php endif; ?>
+
+                  <div id="popupUploadPlaceholder" style="<?= ($popup_edit_data && !empty($popup_edit_data['gambar'])) ? 'display:none;' : '' ?>">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--primary); margin:0 auto 10px; display:block;">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                    <strong style="color:var(--primary); font-size:0.9rem; display:block;">Pilih atau Tarik Gambar</strong>
+                    <span style="font-size:0.78rem; color:var(--gray-600);">Format JPG, PNG, atau WebP (Maks 5MB)</span>
+                  </div>
+
+                  <!-- Live Preview Gambar Baru -->
+                  <div id="popupPreviewArea" style="display:none; margin-top:8px;">
+                    <img id="popupImgPreview" src="" alt="Pratinjau Baru" style="max-height:150px; max-width:100%; border-radius:8px; object-fit:contain; display:block; margin:0 auto 6px;">
+                    <span style="font-size:0.75rem; color:var(--success); font-weight:700;">✓ Pratinjau gambar baru terpilih</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin-top:20px;">
+                <button type="submit" class="btn-primary" style="width:100%; justify-content:center; padding:12px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <?= $popup_edit_data ? 'Simpan Perubahan Pop-up' : 'Simpan &amp; Unggah Pop-up' ?>
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- 3. TABEL DAFTAR SEMUA POP-UP ADS -->
+      <div class="content-box">
+        <div class="content-box-header">
+          <div class="content-box-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            Daftar Manajemen Seluruh Pop-up Ads (<?= count($list_popup_rows) ?> Total)
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table-news">
+            <thead>
+              <tr>
+                <th style="width:60px; text-align:center;">Urutan</th>
+                <th style="width:120px;">Pratinjau</th>
+                <th>Keterangan / Judul</th>
+                <th>Tautan Tujuan</th>
+                <th style="width:160px; text-align:center;">Status Aktif (Toggle)</th>
+                <th style="width:140px; text-align:center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (!empty($list_popup_rows)): ?>
+                <?php foreach ($list_popup_rows as $p): 
+                  $img_src = '../' . htmlspecialchars($p['gambar']);
+                ?>
+                  <tr>
+                    <td style="text-align:center; font-weight:800; color:var(--primary);">
+                      <?= (int)$p['urutan'] ?>
+                    </td>
+                    <td>
+                      <div style="width:90px; height:60px; border-radius:6px; overflow:hidden; background:#000; cursor:pointer; display:flex; align-items:center; justify-content:center; border:1px solid var(--gray-200);" onclick="openImageModal('<?= $img_src ?>')" title="Klik untuk memperbesar">
+                        <img src="<?= $img_src ?>" alt="Thumbnail" style="width:100%; height:100%; object-fit:contain;">
+                      </div>
+                    </td>
+                    <td>
+                      <strong style="color:var(--gray-800); font-size:0.95rem;">
+                        <?= htmlspecialchars($p['keterangan'] ?: 'Pop-up #' . $p['id']) ?>
+                      </strong>
+                      <div style="font-size:0.75rem; color:var(--gray-400); margin-top:2px;">
+                        File: <?= htmlspecialchars($p['gambar']) ?>
+                      </div>
+                    </td>
+                    <td>
+                      <?php if (!empty($p['link_url'])): ?>
+                        <a href="<?= htmlspecialchars($p['link_url']) ?>" target="_blank" rel="noopener" style="color:var(--primary); font-size:0.85rem; display:inline-flex; align-items:center; gap:4px; text-decoration:none;" title="Buka tautan">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                          <span style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><?= htmlspecialchars($p['link_url']) ?></span>
+                        </a>
+                      <?php else: ?>
+                        <span style="color:var(--gray-400); font-size:0.82rem;">— Tanpa link tujuan —</span>
+                      <?php endif; ?>
+                    </td>
+                    <td style="text-align:center;">
+                      <a href="index.php?tab=popup&toggle_popup=<?= (int)$p['id'] ?>" class="btn-status-toggle <?= (int)$p['is_aktif'] === 1 ? 'active' : 'inactive' ?>" title="Klik untuk beralih status Aktif / Nonaktif">
+                        <?= (int)$p['is_aktif'] === 1 ? '● Aktif (Tayang)' : '○ Nonaktif (Mati)' ?>
+                      </a>
+                    </td>
+                    <td style="text-align:center;">
+                      <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <a href="index.php?tab=popup&edit_popup=<?= (int)$p['id'] ?>" class="btn-action edit" title="Edit Pop-up">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </a>
+                        <a href="index.php?tab=popup&hapus_popup=<?= (int)$p['id'] ?>" class="btn-action delete" title="Hapus Pop-up" onclick="return confirm('Apakah Anda yakin ingin menghapus pop-up ini? File gambar di server juga akan otomatis dihapus.');">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <tr>
+                  <td colspan="6" style="text-align:center; padding:30px; color:var(--gray-600);">
+                    Belum ada data pop-up ads. Silakan unggah gambar baru pada formulir di atas.
+                  </td>
+                </tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    <?php endif; // Akhir Tab Pop-up Ads ?>
+
   </main>
 
   <!-- Modal Preview Gambar Full Size -->
@@ -1907,6 +2511,37 @@ $stmt_cp_val->close();
 
     function closeImageModal() {
       document.getElementById('imageModal').classList.remove('active');
+    }
+
+    function previewPopupImage(input) {
+      const previewArea = document.getElementById('popupPreviewArea');
+      const placeholder = document.getElementById('popupUploadPlaceholder');
+      const existing = document.getElementById('popupExistingArea');
+      const img = document.getElementById('popupImgPreview');
+
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Ukuran gambar terlalu besar! Maksimal 5MB.');
+          input.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          img.src = e.target.result;
+          previewArea.style.display = 'block';
+          if (placeholder) placeholder.style.display = 'none';
+          if (existing) existing.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function updateSwitchLabel(checkbox) {
+      const label = document.getElementById('switchLabelText');
+      if (label) {
+        label.textContent = checkbox.checked ? 'Aktif (Ditampilkan)' : 'Nonaktif (Disembunyikan)';
+      }
     }
 
     function filterTable() {
