@@ -5,8 +5,8 @@ require_once __DIR__ . '/koneksi.php';
 $headline_q = $conn->query("SELECT id, judul, slug, tanggal_dibuat FROM berita ORDER BY tanggal_dibuat DESC, id DESC LIMIT 1");
 $headline = ($headline_q && $headline_q->num_rows > 0) ? $headline_q->fetch_assoc() : null;
 
-// Ambil 6 berita terbaru untuk section Sorotan di homepage
-$sorotan_q = $conn->query("SELECT id, judul, slug, gambar, penulis, tanggal_dibuat FROM berita ORDER BY tanggal_dibuat DESC, id DESC LIMIT 6");
+// Ambil 3 berita terbaru untuk section Sorotan di homepage
+$sorotan_q = $conn->query("SELECT id, judul, slug, gambar, penulis, tanggal_dibuat FROM berita ORDER BY tanggal_dibuat DESC, id DESC LIMIT 3");
 $sorotan_rows = ($sorotan_q && $sorotan_q->num_rows > 0) ? $sorotan_q->fetch_all(MYSQLI_ASSOC) : [];
 
 // Ambil jadwal pelayanan dari database

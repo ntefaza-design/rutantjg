@@ -269,6 +269,25 @@ if (!is_dir($popup_upload_dir)) {
     mkdir($popup_upload_dir, 0755, true);
 }
 
+/**
+ * Normalisasi urutan pop-up ads agar berurutan 1, 2, 3... tanpa nomor duplikat atau loncat
+ */
+if (!function_exists('normalisasi_urutan_popup')) {
+    function normalisasi_urutan_popup($conn) {
+        $res = $conn->query("SELECT id FROM popup_ads ORDER BY urutan ASC, id ASC");
+        if ($res) {
+            $seq = 1;
+            $stmt = $conn->prepare("UPDATE popup_ads SET urutan = ? WHERE id = ?");
+            while ($row = $res->fetch_assoc()) {
+                $stmt->bind_param("ii", $seq, $row['id']);
+                $stmt->execute();
+                $seq++;
+            }
+            $stmt->close();
+        }
+    }
+}
+
 // Tambah gambar popup baru
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah_popup'])) {
     if (!isset($_FILES['popup_gambar']) || $_FILES['popup_gambar']['error'] !== UPLOAD_ERR_OK) {
@@ -298,36 +317,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah_popup']
     $is_aktif    = isset($_POST['popup_is_aktif']) ? 1 : 0;
     $urutan      = max(1, (int)($_POST['popup_urutan'] ?? 1));
     $gambar_path = 'uploads/popup/' . $nama_file;
+
+    // Geser urutan yang sudah ada: jika ada urutan >= $urutan, geser +1 agar urutan sebelumnya turun
+    $stmt_shift = $conn->prepare("UPDATE popup_ads SET urutan = urutan + 1 WHERE urutan >= ?");
+    $stmt_shift->bind_param("i", $urutan);
+    $stmt_shift->execute();
+    $stmt_shift->close();
+
     $stmt_p = $conn->prepare("INSERT INTO popup_ads (gambar, link_url, is_aktif, urutan, keterangan) VALUES (?, ?, ?, ?, ?)");
     $stmt_p->bind_param("ssiss", $gambar_path, $link_url, $is_aktif, $urutan, $keterangan);
     if ($stmt_p->execute()) {
-        $_SESSION['flash_sukses'] = 'Gambar pop-up berhasil ditambahkan!';
+        $stmt_p->close();
+        normalisasi_urutan_popup($conn);
+        $_SESSION['flash_sukses'] = 'Gambar pop-up berhasil ditambahkan pada urutan ke-' . $urutan . ' (urutan lama yang sama otomatis bergeser turun)!';
     } else {
+        $stmt_p->close();
         @unlink($tujuan);
-        $_SESSION['flash_error'] = 'Gagal menyimpan ke database: ' . $stmt_p->error;
+        $_SESSION['flash_error'] = 'Gagal menyimpan ke database: ' . $conn->error;
     }
-    $stmt_p->close();
     header("Location: index.php?tab=popup"); exit;
 }
 
 // Edit popup (update link, status, urutan, keterangan — gambar opsional)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit_popup'])) {
-    $pid       = (int)($_POST['popup_id'] ?? 0);
-    $link_url  = trim($_POST['popup_link_url'] ?? '');
-    $keterangan= trim($_POST['popup_keterangan'] ?? '');
-    $is_aktif  = isset($_POST['popup_is_aktif']) ? 1 : 0;
-    $urutan    = max(1, (int)($_POST['popup_urutan'] ?? 1));
+    $pid        = (int)($_POST['popup_id'] ?? 0);
+    $link_url   = trim($_POST['popup_link_url'] ?? '');
+    $keterangan = trim($_POST['popup_keterangan'] ?? '');
+    $is_aktif   = isset($_POST['popup_is_aktif']) ? 1 : 0;
+    $new_urutan = max(1, (int)($_POST['popup_urutan'] ?? 1));
     if ($pid <= 0) {
         $_SESSION['flash_error'] = 'ID popup tidak valid!';
         header("Location: index.php?tab=popup"); exit;
     }
-    // Ambil gambar lama
-    $stmt_old = $conn->prepare("SELECT gambar FROM popup_ads WHERE id = ? LIMIT 1");
+    // Ambil data lama
+    $stmt_old = $conn->prepare("SELECT gambar, urutan FROM popup_ads WHERE id = ? LIMIT 1");
     $stmt_old->bind_param("i", $pid);
     $stmt_old->execute();
     $old_row = $stmt_old->get_result()->fetch_assoc();
     $stmt_old->close();
+    if (!$old_row) {
+        $_SESSION['flash_error'] = 'Data pop-up tidak ditemukan!';
+        header("Location: index.php?tab=popup"); exit;
+    }
+    $old_urutan  = (int)$old_row['urutan'];
     $gambar_path = $old_row['gambar'] ?? '';
+
     // Proses ganti gambar jika ada file baru
     if (isset($_FILES['popup_gambar']) && $_FILES['popup_gambar']['error'] === UPLOAD_ERR_OK) {
         $file_tmp  = $_FILES['popup_gambar']['tmp_name'];
@@ -353,14 +387,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit_popup']))
             $gambar_path = 'uploads/popup/' . $nama_file;
         }
     }
-    $stmt_upd = $conn->prepare("UPDATE popup_ads SET gambar=?, link_url=?, is_aktif=?, urutan=?, keterangan=? WHERE id=?");
-    $stmt_upd->bind_param("ssiisi", $gambar_path, $link_url, $is_aktif, $urutan, $keterangan, $pid);
-    if ($stmt_upd->execute()) {
-        $_SESSION['flash_sukses'] = 'Pop-up berhasil diperbarui!';
-    } else {
-        $_SESSION['flash_error'] = 'Gagal memperbarui: ' . $stmt_upd->error;
+
+    // Geser urutan jika berubah posisi
+    if ($new_urutan !== $old_urutan) {
+        if ($new_urutan < $old_urutan) {
+            // Pindah ke urutan lebih awal (misal dari 7 ke 3):
+            // Yang berada di [new_urutan, old_urutan - 1] bergeser naik (+1)
+            $stmt_s = $conn->prepare("UPDATE popup_ads SET urutan = urutan + 1 WHERE urutan >= ? AND urutan < ? AND id != ?");
+            $stmt_s->bind_param("iii", $new_urutan, $old_urutan, $pid);
+            $stmt_s->execute();
+            $stmt_s->close();
+        } else {
+            // Pindah ke urutan lebih akhir (misal dari 3 ke 7):
+            // Yang berada di [old_urutan + 1, new_urutan] bergeser turun (-1)
+            $stmt_s = $conn->prepare("UPDATE popup_ads SET urutan = urutan - 1 WHERE urutan > ? AND urutan <= ? AND id != ?");
+            $stmt_s->bind_param("iii", $old_urutan, $new_urutan, $pid);
+            $stmt_s->execute();
+            $stmt_s->close();
+        }
     }
-    $stmt_upd->close();
+
+    $stmt_upd = $conn->prepare("UPDATE popup_ads SET gambar=?, link_url=?, is_aktif=?, urutan=?, keterangan=? WHERE id=?");
+    $stmt_upd->bind_param("ssiisi", $gambar_path, $link_url, $is_aktif, $new_urutan, $keterangan, $pid);
+    if ($stmt_upd->execute()) {
+        $stmt_upd->close();
+        normalisasi_urutan_popup($conn);
+        $_SESSION['flash_sukses'] = 'Pop-up berhasil diperbarui dan urutan otomatis diselaraskan!';
+    } else {
+        $stmt_upd->close();
+        $_SESSION['flash_error'] = 'Gagal memperbarui: ' . $conn->error;
+    }
     header("Location: index.php?tab=popup"); exit;
 }
 
@@ -380,11 +436,13 @@ if (isset($_GET['hapus_popup']) && $tab === 'popup') {
         $stmt_del = $conn->prepare("DELETE FROM popup_ads WHERE id = ?");
         $stmt_del->bind_param("i", $pid_del);
         if ($stmt_del->execute()) {
-            $_SESSION['flash_sukses'] = 'Pop-up berhasil dihapus!';
+            $stmt_del->close();
+            normalisasi_urutan_popup($conn);
+            $_SESSION['flash_sukses'] = 'Pop-up berhasil dihapus dan urutan diperbarui!';
         } else {
-            $_SESSION['flash_error'] = 'Gagal menghapus: ' . $stmt_del->error;
+            $stmt_del->close();
+            $_SESSION['flash_error'] = 'Gagal menghapus: ' . $conn->error;
         }
-        $stmt_del->close();
     }
     header("Location: index.php?tab=popup"); exit;
 }
@@ -414,6 +472,7 @@ if ($popup_edit_id > 0 && $tab === 'popup') {
 }
 
 // Ambil semua popup untuk tampilan tab
+normalisasi_urutan_popup($conn);
 $list_popup = $conn->query("SELECT * FROM popup_ads ORDER BY urutan ASC, id ASC");
 $list_popup_rows = $list_popup ? $list_popup->fetch_all(MYSQLI_ASSOC) : [];
 
@@ -2314,8 +2373,8 @@ $stmt_cp_val->close();
                 <!-- Urutan Tampilan -->
                 <div class="form-group">
                   <label class="form-label">Urutan Tampilan</label>
-                  <input type="number" name="popup_urutan" class="form-input" min="1" value="<?= (int)($popup_edit_data['urutan'] ?? 1) ?>" required>
-                  <div class="form-help">Nomor urut slide (1 = slide pertama).</div>
+                  <input type="number" name="popup_urutan" class="form-input" min="1" value="<?= (int)($popup_edit_data['urutan'] ?? (count($list_popup_rows) + 1)) ?>" required>
+                  <div class="form-help">Nomor urut slide (1 = slide pertama). Jika diisi nomor yang sudah ada (misal urutan 3 atau 7), pop-up yang sebelumnya ada di posisi tersebut akan otomatis bergeser turun (+1).</div>
                 </div>
 
                 <!-- Toggle Switch Status Aktif -->
