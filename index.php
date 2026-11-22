@@ -1,8 +1,9 @@
 <?php
 require_once __DIR__ . '/koneksi.php';
 
-// Ambil 6 berita terbaru dari database
-$query_berita = $conn->query("SELECT * FROM berita ORDER BY tanggal_dibuat DESC, id DESC LIMIT 6");
+// Ambil 1 berita terbaru untuk headline banner di layar tengah hero
+$headline_q = $conn->query("SELECT id, judul, slug, tanggal_dibuat FROM berita ORDER BY tanggal_dibuat DESC, id DESC LIMIT 1");
+$headline = ($headline_q && $headline_q->num_rows > 0) ? $headline_q->fetch_assoc() : null;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -19,7 +20,7 @@ $query_berita = $conn->query("SELECT * FROM berita ORDER BY tanggal_dibuat DESC,
   <link
     href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=<?= filemtime(__DIR__ . '/style.css') ?>" />
   <link rel="icon" type="image/png" href="banner/LOGO RUTAN png.png" />
 </head>
 
@@ -43,11 +44,24 @@ $query_berita = $conn->query("SELECT * FROM berita ORDER BY tanggal_dibuat DESC,
         <a href="#visi-misi" class="nav-link">Visi &amp; Misi</a>
         <a href="#pejabat" class="nav-link">Pejabat Struktural</a>
         <a href="#jadwal" class="nav-link">Jadwal</a>
-        <a href="#berita" class="nav-link">Berita</a>
         <a href="#pengaduan" class="nav-link">Pengaduan</a>
         <a href="#sosmed" class="nav-link">Sosial Media Kami</a>
         <a href="#kontak" class="nav-link">Kontak &amp; Lokasi</a>
-        <a href="#pengaduan" class="btn-nav-cta">📲 Pengaduan WA</a>
+        <a href="berita.php" class="btn-nav-berita-cta" title="Buka Halaman Berita &amp; Publikasi">
+          <div class="nav-berita-icon-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10l6 6v8a2 2 0 0 1-2 2z"></path>
+              <polyline points="13 2 13 8 19 8"></polyline>
+              <line x1="8" y1="13" x2="16" y2="13"></line>
+              <line x1="8" y1="17" x2="13" y2="17"></line>
+            </svg>
+          </div>
+          <div class="nav-berita-text-group">
+            <span class="nav-berita-label-top">BERITA &amp; INFORMASI</span>
+            <span class="nav-berita-label-sub">PUBLIKASI RESMI</span>
+          </div>
+          <span class="nav-berita-live-dot" title="Informasi Terkini"></span>
+        </a>
       </nav>
       <button class="hamburger" id="hamburger" aria-label="Toggle Menu">
         <span></span><span></span><span></span>
@@ -81,6 +95,44 @@ $query_berita = $conn->query("SELECT * FROM berita ORDER BY tanggal_dibuat DESC,
         </a>
       </div>
 
+      <!-- Kapsul Desain Minimalis & Transparan: BERITA TERKINI di Layar Tengah -->
+      <div class="hero-berita-wrapper">
+        <a href="berita.php" class="hero-berita-capsule" title="Klik untuk membuka Berita &amp; Informasi Rutan Tanjung">
+          <div class="hero-berita-badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10l6 6v8a2 2 0 0 1-2 2z"></path>
+              <polyline points="13 2 13 8 19 8"></polyline>
+              <line x1="8" y1="13" x2="16" y2="13"></line>
+              <line x1="8" y1="17" x2="13" y2="17"></line>
+            </svg>
+            <span>BERITA TERKINI</span>
+            <span class="hero-berita-badge-pulse"></span>
+          </div>
+
+          <div class="hero-berita-text-wrap">
+            <span class="hero-berita-title">
+              <?= !empty($headline['judul']) ? htmlspecialchars($headline['judul']) : 'Kabar Terkini &amp; Informasi Pelayanan Rutan Tanjung Kelas IIB' ?>
+            </span>
+            <div class="hero-berita-sub">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span><?= !empty($headline['tanggal_dibuat']) ? format_tanggal_indo($headline['tanggal_dibuat']) : 'Diperbarui Rutin' ?></span>
+            </div>
+          </div>
+
+          <div class="hero-berita-btn">
+            <span>Buka Portal</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </div>
+        </a>
+      </div>
     </div>
 
   </section>
@@ -405,69 +457,7 @@ $query_berita = $conn->query("SELECT * FROM berita ORDER BY tanggal_dibuat DESC,
       </div>
     </div>
   </section>
-
-  <!-- ===== BERITA TERKINI ===== -->
-  <section class="section" id="berita">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Kabar &amp; Informasi</span>
-        <h2 class="section-title">Berita Terkini</h2>
-        <p class="section-desc">Informasi terbaru seputar kegiatan, pembinaan, dan pelayanan di Rutan Tanjung Kelas IIB</p>
-      </div>
-
-      <div class="berita-grid">
-        <?php if ($query_berita && $query_berita->num_rows > 0): ?>
-          <?php while ($b = $query_berita->fetch_assoc()): 
-            $gambar_src = (!empty($b['gambar']) && file_exists(__DIR__ . '/uploads/berita/' . $b['gambar']))
-                          ? 'uploads/berita/' . htmlspecialchars($b['gambar'])
-                          : 'gambar atau poster/header rutan.jpg';
-            $cuplikan = strip_tags($b['isi']);
-            if (mb_strlen($cuplikan) > 130) {
-              $cuplikan = mb_substr($cuplikan, 0, 130) . '...';
-            }
-            $link_detail = 'detail-berita.php?slug=' . urlencode($b['slug']);
-          ?>
-            <article class="berita-card">
-              <div class="berita-card-img-wrap">
-                <img src="<?= $gambar_src ?>" alt="<?= htmlspecialchars($b['judul']) ?>" class="berita-card-img" loading="lazy">
-                <span class="berita-date-badge"><?= format_tanggal_indo($b['tanggal_dibuat']) ?></span>
-              </div>
-              <div class="berita-card-body">
-                <div class="berita-meta">
-                  <span class="berita-author">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                      <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <?= htmlspecialchars($b['penulis']) ?>
-                  </span>
-                </div>
-                <h3 class="berita-card-title">
-                  <a href="<?= $link_detail ?>"><?= htmlspecialchars($b['judul']) ?></a>
-                </h3>
-                <p class="berita-card-desc"><?= htmlspecialchars($cuplikan) ?></p>
-                <div class="berita-card-footer">
-                  <a href="<?= $link_detail ?>" class="btn-read-more">
-                    Baca Selengkapnya
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                      <polyline points="12 5 19 12 12 19"></polyline>
-                    </svg>
-                  </a>
-                </div>
-              </div>
-            </article>
-          <?php endwhile; ?>
-        <?php else: ?>
-          <div class="berita-empty">
-            <p>Belum ada berita yang dipublikasikan saat ini.</p>
-          </div>
-        <?php endif; ?>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== BANNER TOLAK GRATIFIKASI ===== -->
+<!-- ===== BANNER TOLAK GRATIFIKASI ===== -->
   <section class="section-banner-gratifikasi">
     <img src="banner/tolak gratifikasi panjang.png"
       alt="Komitmen Bersama Tolak Gratifikasi &amp; Pungli — Rutan Tanjung Kelas IIB" class="banner-gratifikasi-img"
@@ -910,6 +900,20 @@ $query_berita = $conn->query("SELECT * FROM berita ORDER BY tanggal_dibuat DESC,
             </div>
             <span class="channel-arrow">→</span>
           </a>
+
+          <a href="https://x.com/HumasRutansa" target="_blank" rel="noopener" class="sosmed-channel-card x-twitter"
+            id="channel-x">
+            <div class="channel-icon-wrap tw">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </div>
+            <div class="channel-info">
+              <strong>X (Twitter)</strong>
+              <span>@HumasRutansa</span>
+            </div>
+            <span class="channel-arrow">→</span>
+          </a>
         </div>
       </div>
     </div>
@@ -1007,6 +1011,10 @@ $query_berita = $conn->query("SELECT * FROM berita ORDER BY tanggal_dibuat DESC,
           <p class="footer-desc">Rumah Tahanan Negara Tanjung Kelas IIB — Unit Pelaksana Teknis di bawah Ditjen
             Pemasyarakatan, Kementerian Imigrasi dan Pemasyarakatan RI.</p>
           <div class="footer-sosmed">
+            <a href="https://x.com/HumasRutansa" target="_blank" rel="noopener" id="footer-x" class="footer-sosmed-icon" aria-label="X (Twitter)"><svg viewBox="0 0 24 24"
+                fill="currentColor" width="16" height="16">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg></a>
             <a href="https://www.facebook.com/share/14nipLTAWgD/" target="_blank" rel="noopener" id="footer-fb" class="footer-sosmed-icon" aria-label="Facebook"><svg viewBox="0 0 24 24"
                 fill="currentColor" width="18" height="18">
                 <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />

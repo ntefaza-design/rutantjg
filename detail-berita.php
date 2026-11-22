@@ -59,7 +59,7 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=<?= filemtime(__DIR__ . '/style.css') ?>" />
   <link rel="icon" type="image/png" href="banner/LOGO RUTAN png.png" />
   <style>
     /* Styling Khusus Halaman Detail Berita */
@@ -432,11 +432,24 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
         <a href="index.php#visi-misi" class="nav-link">Visi &amp; Misi</a>
         <a href="index.php#pejabat" class="nav-link">Pejabat Struktural</a>
         <a href="index.php#jadwal" class="nav-link">Jadwal</a>
-        <a href="index.php#berita" class="nav-link">Berita</a>
         <a href="index.php#pengaduan" class="nav-link">Pengaduan</a>
         <a href="index.php#sosmed" class="nav-link">Sosial Media Kami</a>
         <a href="index.php#kontak" class="nav-link">Kontak &amp; Lokasi</a>
-        <a href="index.php#pengaduan" class="btn-nav-cta">📲 Pengaduan WA</a>
+        <a href="berita.php" class="btn-nav-berita-cta" title="Buka Halaman Berita &amp; Publikasi">
+          <div class="nav-berita-icon-box">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h10l6 6v8a2 2 0 0 1-2 2z"></path>
+              <polyline points="13 2 13 8 19 8"></polyline>
+              <line x1="8" y1="13" x2="16" y2="13"></line>
+              <line x1="8" y1="17" x2="13" y2="17"></line>
+            </svg>
+          </div>
+          <div class="nav-berita-text-group">
+            <span class="nav-berita-label-top">BERITA &amp; INFORMASI</span>
+            <span class="nav-berita-label-sub">PUBLIKASI RESMI</span>
+          </div>
+          <span class="nav-berita-live-dot" title="Informasi Terkini"></span>
+        </a>
       </nav>
       <button class="hamburger" id="hamburger" aria-label="Toggle Menu">
         <span></span><span></span><span></span>
@@ -519,6 +532,12 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
                     <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
                   </svg>
                   Facebook
+                </a>
+                <a href="https://twitter.com/intent/tweet?text=<?= urlencode($berita['judul'] . ' - Baca selengkapnya di: ' . $current_url) ?>" target="_blank" rel="noopener" class="btn-share btn-share-x" style="background:#0f1419;color:#ffffff;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                  X (Twitter)
                 </a>
                 <button type="button" class="btn-share btn-share-copy" onclick="copyArticleUrl()">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -609,6 +628,28 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
         <p class="footer-tagline">
           Memberikan pelayanan pemasyarakatan yang berkeadilan, transparan, dan humanis untuk kemaslahatan warga binaan dan masyarakat.
         </p>
+        <div class="footer-sosmed" style="margin-top: 16px;">
+          <a href="https://x.com/HumasRutansa" target="_blank" rel="noopener" class="footer-sosmed-icon" aria-label="X (Twitter)"><svg viewBox="0 0 24 24"
+              fill="currentColor" width="16" height="16">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg></a>
+          <a href="https://www.instagram.com/rutan_tanjung" target="_blank" rel="noopener" class="footer-sosmed-icon" aria-label="Instagram"><svg viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+            </svg></a>
+          <a href="https://www.facebook.com/share/14nipLTAWgD/" target="_blank" rel="noopener" class="footer-sosmed-icon" aria-label="Facebook"><svg viewBox="0 0 24 24"
+              fill="currentColor" width="18" height="18">
+              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+            </svg></a>
+          <a href="https://youtube.com/@rutantanjung?si=2dmk1-x2Z7LyfAdb" target="_blank" rel="noopener" class="footer-sosmed-icon" aria-label="YouTube"><svg viewBox="0 0 24 24"
+              width="18" height="18">
+              <path fill="currentColor"
+                d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" />
+              <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#061540" />
+            </svg></a>
+        </div>
       </div>
       <div class="footer-links-group">
         <h4 class="footer-heading">Navigasi</h4>

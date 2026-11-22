@@ -2163,7 +2163,7 @@ input, textarea, select { font-family: inherit; }
 
 .sosmed-channels-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 18px;
 }
 
@@ -3035,4 +3035,285 @@ input, textarea, select { font-family: inherit; }
   border: 1px dashed var(--gray-200);
   color: var(--gray-600);
   font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   DESAIN GRAFIS: TOMBOL NAVBAR & KAPSUL HERO BERITA & INFORMASI
+   ========================================================================== */
+
+/* 1. TOMBOL NAVBAR KANAN: BERITA & INFORMASI (HIGH CONTRAST & SHINE) */
+.btn-nav-berita-cta {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #ffe082 0%, #d4af37 50%, #b8860b 100%);
+  color: #061540 !important;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 8px 18px 8px 12px;
+  border-radius: 50px;
+  margin-left: 10px;
+  text-decoration: none !important;
+  box-shadow: 0 4px 18px rgba(212, 175, 55, 0.45);
+  border: 1.5px solid #fff3c4;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.btn-nav-berita-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  transform: skewX(-20deg);
+  transition: 0.6s ease;
+}
+
+.btn-nav-berita-cta:hover::before {
+  left: 130%;
+}
+
+.btn-nav-berita-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.65);
+  color: #030b22 !important;
+  border-color: #ffffff;
+}
+
+.nav-berita-icon-box {
+  width: 28px;
+  height: 28px;
+  background: #061540;
+  color: #ffd700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.nav-berita-icon-box svg {
+  display: block;
+}
+
+.nav-berita-text-group {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.nav-berita-label-top {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #061540;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  display: block;
+}
+
+.nav-berita-label-sub {
+  font-size: 9px;
+  font-weight: 700;
+  color: #553e00;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  display: block;
+}
+
+.nav-berita-live-dot {
+  width: 8px;
+  height: 8px;
+  background: #e53e3e;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7);
+  animation: navPulseLive 2s infinite;
+  margin-left: 2px;
+  flex-shrink: 0;
+}
+
+@keyframes navPulseLive {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(229, 62, 62, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); }
+}
+
+/* 2. KAPSUL HERO CENTER: BERITA TERKINI (TRANSPARAN & MINIMALIS) */
+.hero-berita-wrapper {
+  margin: 18px auto 0;
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  justify-content: center;
+  animation: fadeInUp 0.8s ease 0.6s both;
+  position: relative;
+  z-index: 2;
+}
+
+.hero-berita-capsule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(6, 21, 64, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 8px 14px 8px 10px;
+  border-radius: 50px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  text-decoration: none !important;
+  color: #ffffff !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.hero-berita-capsule:hover {
+  transform: translateY(-2px);
+  background: rgba(6, 21, 64, 0.65);
+  border-color: rgba(201, 168, 76, 0.65);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(201, 168, 76, 0.2);
+}
+
+.hero-berita-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(201, 168, 76, 0.16);
+  border: 1px solid rgba(201, 168, 76, 0.45);
+  color: #ffd978 !important;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 30px;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+.hero-berita-badge svg {
+  color: #ffd978;
+  display: block;
+}
+
+.hero-berita-badge-pulse {
+  width: 6px;
+  height: 6px;
+  background: #e53e3e;
+  border-radius: 50%;
+  display: inline-block;
+  animation: navPulseLive 1.8s infinite;
+}
+
+.hero-berita-text-wrap {
+  flex: 1;
+  text-align: left;
+  min-width: 0;
+  padding: 0 4px;
+}
+
+.hero-berita-title {
+  color: #ffffff !important;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  letter-spacing: -0.1px;
+}
+
+.hero-berita-sub {
+  color: rgba(255, 255, 255, 0.65) !important;
+  font-size: 11px;
+  font-weight: 500;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hero-berita-sub svg {
+  color: #ffd978;
+  opacity: 0.85;
+}
+
+.hero-berita-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #f1f4fb !important;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 13px;
+  border-radius: 30px;
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.hero-berita-capsule:hover .hero-berita-btn {
+  background: rgba(201, 168, 76, 0.22);
+  border-color: rgba(201, 168, 76, 0.7);
+  color: #ffd978 !important;
+}
+
+.hero-berita-btn svg {
+  display: block;
+  transition: transform 0.25s ease;
+}
+
+.hero-berita-capsule:hover .hero-berita-btn svg {
+  transform: translateX(3px);
+}
+
+/* Jarak hero-actions agar proporsional */
+.hero-actions {
+  margin-bottom: 20px !important;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .hero-berita-capsule {
+    flex-direction: column;
+    text-align: center;
+    border-radius: 20px;
+    padding: 16px;
+    gap: 12px;
+  }
+  .hero-berita-text-wrap {
+    text-align: center;
+    padding-right: 0;
+  }
+  .hero-berita-title {
+    white-space: normal;
+    text-overflow: unset;
+  }
+  .hero-berita-sub {
+    justify-content: center;
+  }
+  .hero-berita-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-nav-berita-cta {
+    padding: 7px 14px;
+    margin-left: 0;
+    justify-content: center;
+  }
 }
