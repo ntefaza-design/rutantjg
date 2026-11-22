@@ -5,6 +5,12 @@
  */
 session_start();
 
+// Cegah caching browser pada panel admin agar perubahan data langsung terlihat real-time
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+header("Expires: 0");
+
 // Proteksi Sesi Admin - Jika belum login, redirect ke halaman login
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header("Location: ../login.php?msg=belum_login");
@@ -206,18 +212,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit'])) {
 // ==========================================
 // PROSES CRUD: HAPUS BERITA (DELETE)
 // ==========================================
+$id_hapus = 0;
 if ($action === 'hapus' && $edit_id > 0) {
+    $id_hapus = $edit_id;
+} elseif (isset($_GET['hapus_berita']) && (int)$_GET['hapus_berita'] > 0) {
+    $id_hapus = (int)$_GET['hapus_berita'];
+} elseif (isset($_GET['hapus']) && (int)$_GET['hapus'] > 0) {
+    $id_hapus = (int)$_GET['hapus'];
+} elseif (isset($_POST['hapus_id']) && (int)$_POST['hapus_id'] > 0) {
+    $id_hapus = (int)$_POST['hapus_id'];
+}
+
+if ($id_hapus > 0) {
     // Ambil info gambar sebelum menghapus dari database
     $get_img = $conn->prepare("SELECT gambar FROM berita WHERE id = ? LIMIT 1");
-    $get_img->bind_param("i", $edit_id);
+    $get_img->bind_param("i", $id_hapus);
     $get_img->execute();
     $img_res = $get_img->get_result();
     $data_img = $img_res->fetch_assoc();
     $get_img->close();
 
-    if ($data_img) {
+    if ($data_img !== null) {
         $stmt = $conn->prepare("DELETE FROM berita WHERE id = ?");
-        $stmt->bind_param("i", $edit_id);
+        $stmt->bind_param("i", $id_hapus);
         if ($stmt->execute()) {
             // Hapus file fisik gambar jika ada di uploads/berita/
             if (!empty($data_img['gambar']) && file_exists($upload_dir . $data_img['gambar'])) {
@@ -229,9 +246,9 @@ if ($action === 'hapus' && $edit_id > 0) {
         }
         $stmt->close();
     } else {
-        $_SESSION['flash_error'] = 'Data berita tidak ditemukan!';
+        $_SESSION['flash_error'] = 'Data berita tidak ditemukan atau sudah dihapus!';
     }
-    header("Location: index.php");
+    header("Location: index.php?tab=berita&t=" . time());
     exit;
 }
 
@@ -1728,7 +1745,7 @@ $stmt_cp_val->close();
                       <circle cx="8.5" cy="8.5" r="1.5"></circle>
                       <polyline points="21 15 16 10 5 21"></polyline>
                     </svg>
-                    <p style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Klik atau Tarik Gambar ke Sini</p>
+                    <p style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Klik untuk Memilih Gambar</p>
                     <p style="font-size:0.75rem;color:var(--gray-600);">JPG, JPEG, PNG, atau WEBP (Maks 5MB)</p>
                   </div>
                   <div class="upload-preview-area" id="previewArea" style="display:none;">
@@ -1825,7 +1842,7 @@ $stmt_cp_val->close();
                         <circle cx="8.5" cy="8.5" r="1.5"></circle>
                         <polyline points="21 15 16 10 5 21"></polyline>
                       </svg>
-                      <p style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Klik atau Tarik Gambar ke Sini</p>
+                      <p style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Klik untuk Memilih Gambar</p>
                       <p style="font-size:0.75rem;color:var(--gray-600);">JPG, JPEG, PNG, atau WEBP (Maks 5MB)</p>
                     </div>
                     <div class="upload-preview-area" id="previewArea" style="display:none;">
@@ -1944,7 +1961,7 @@ $stmt_cp_val->close();
                         </svg>
                         Edit
                       </a>
-                      <a href="index.php?action=hapus&id=<?= $row['id'] ?>" class="btn-action-delete" title="Hapus Berita" onclick="return confirm('Apakah Anda yakin ingin menghapus berita ini secara permanen? File gambar juga akan dihapus.');">
+                      <a href="index.php?action=hapus&id=<?= $row['id'] ?>" class="btn-action-delete" title="Hapus Berita" onclick="return confirmDeleteNews('index.php?action=hapus&id=<?= $row['id'] ?>', '<?= htmlspecialchars(addslashes($row['judul'])) ?>', event);">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <polyline points="3 6 5 6 21 6"></polyline>
                           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -2417,7 +2434,7 @@ $stmt_cp_val->close();
                       <circle cx="8.5" cy="8.5" r="1.5"></circle>
                       <polyline points="21 15 16 10 5 21"></polyline>
                     </svg>
-                    <strong style="color:var(--primary); font-size:0.9rem; display:block;">Pilih atau Tarik Gambar</strong>
+                    <strong style="color:var(--primary); font-size:0.9rem; display:block;">Pilih Gambar</strong>
                     <span style="font-size:0.78rem; color:var(--gray-600);">Format JPG, PNG, atau WebP (Maks 5MB)</span>
                   </div>
 
@@ -2540,6 +2557,26 @@ $stmt_cp_val->close();
     <img src="" alt="Full Preview" class="admin-modal-img" id="modalImg">
   </div>
 
+  <!-- Modal Konfirmasi Hapus Berita (Anti-Block) -->
+  <div class="admin-modal-overlay" id="deleteConfirmModal" style="display:none; z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; max-width:440px; width:90%; padding:28px 24px; text-align:center; box-shadow:0 20px 40px rgba(0,0,0,0.25);">
+      <div style="width:56px; height:56px; border-radius:50%; background:#fed7d7; color:#e53e3e; display:flex; align-items:center; justify-content:center; margin:0 auto 16px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </div>
+      <h3 style="margin:0 0 8px; font-size:1.15rem; color:#1a202c;">Hapus Berita Ini?</h3>
+      <p id="deleteModalJudul" style="font-size:0.9rem; color:#718096; margin:0 0 24px; line-height:1.5; word-break:break-word;"></p>
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <button type="button" class="btn-secondary" onclick="closeDeleteModal()" style="min-width:100px; padding:9px 18px; cursor:pointer;">Batal</button>
+        <a id="deleteModalConfirmBtn" href="#" class="btn-action-delete" style="min-width:100px; padding:9px 18px; text-align:center; background:#e53e3e; color:#fff; text-decoration:none; border-radius:6px; font-weight:600; display:inline-block; border:none;">Ya, Hapus</a>
+      </div>
+    </div>
+  </div>
+
   <footer class="admin-footer">
     <p>&copy; <?= date('Y') ?> Rumah Tahanan Negara Tanjung Kelas IIB &bull; Ditjen Pemasyarakatan &bull; Kemenimipas RI</p>
   </footer>
@@ -2622,6 +2659,25 @@ $stmt_cp_val->close();
           }
         }
       }
+    }
+
+    function confirmDeleteNews(url, judul, event) {
+      if (event) event.preventDefault();
+      const modal = document.getElementById('deleteConfirmModal');
+      const judulEl = document.getElementById('deleteModalJudul');
+      const btn = document.getElementById('deleteModalConfirmBtn');
+      if (modal && btn) {
+        if (judulEl) judulEl.textContent = 'Apakah Anda yakin ingin menghapus berita "' + judul + '" secara permanen? File gambar terkait juga akan otomatis dihapus.';
+        btn.href = url;
+        modal.style.display = 'flex';
+        return false;
+      }
+      return confirm('Apakah Anda yakin ingin menghapus berita ini secara permanen?');
+    }
+
+    function closeDeleteModal() {
+      const modal = document.getElementById('deleteConfirmModal');
+      if (modal) modal.style.display = 'none';
     }
   </script>
 </body>

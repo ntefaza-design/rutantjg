@@ -1,22 +1,43 @@
 <?php
 require_once __DIR__ . '/koneksi.php';
 
-// Pagination
-$per_page = 9;
+// Pagination: 1 featured + 6 grid di halaman 1, 6 grid di halaman selanjutnya
+$grid_per_page = 6;
 $halaman = max(1, (int)($_GET['halaman'] ?? 1));
-$offset = ($halaman - 1) * $per_page;
 
 // Total berita
 $total_row = $conn->query("SELECT COUNT(*) as total FROM berita")->fetch_assoc();
 $total_berita = (int)($total_row['total'] ?? 0);
-$total_halaman = max(1, ceil($total_berita / $per_page));
+
+// Hitung total halaman:
+// Halaman 1: ambil 7 (1 featured + 6 grid)
+// Halaman 2+: ambil 6 per halaman, offset mulai dari 7
+if ($total_berita <= 1) {
+    $total_halaman = 1;
+} else {
+    // Sisa setelah halaman pertama (7 berita) dibagi 6
+    $sisa = max(0, $total_berita - 7);
+    $total_halaman = 1 + max(0, (int)ceil($sisa / $grid_per_page));
+}
+
+// Hitung limit dan offset
+if ($halaman === 1) {
+    $limit_query = 7; // 1 featured + 6 grid
+    $offset = 0;
+} else {
+    $limit_query = $grid_per_page;
+    $offset = 7 + ($halaman - 2) * $grid_per_page;
+}
 
 // Ambil berita untuk halaman ini
 $stmt = $conn->prepare("SELECT * FROM berita ORDER BY tanggal_dibuat DESC, id DESC LIMIT ? OFFSET ?");
-$stmt->bind_param("ii", $per_page, $offset);
+$stmt->bind_param("ii", $limit_query, $offset);
 $stmt->execute();
 $result_berita = $stmt->get_result();
 $stmt->close();
+
+// Alias per_page untuk kompatibilitas tampilan info
+$per_page = ($halaman === 1) ? 7 : $grid_per_page;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -99,38 +120,11 @@ $stmt->close();
       font-size: 1.1rem;
       color: rgba(255,255,255,0.72);
       max-width: 560px;
-      margin: 0 auto 32px;
+      margin: 0 auto;
       line-height: 1.65;
     }
 
-    .berita-hero-stats {
-      display: inline-flex;
-      align-items: center;
-      gap: 28px;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.12);
-      backdrop-filter: blur(10px);
-      padding: 14px 28px;
-      border-radius: 50px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
 
-    .hero-stat-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.9rem;
-      color: rgba(255,255,255,0.85);
-    }
-
-    .hero-stat-item svg { color: var(--gold); }
-
-    .hero-stat-num {
-      font-weight: 800;
-      font-size: 1.1rem;
-      color: var(--gold-light);
-    }
 
     /* ===== FILTER & SEARCH BAR ===== */
     .berita-filter-section {
@@ -591,34 +585,6 @@ $stmt->close();
       <p class="berita-hero-desc">
         Informasi terbaru seputar kegiatan, program pembinaan, dan pelayanan publik di Rutan Kelas IIB Tanjung.
       </p>
-      <div class="berita-hero-stats">
-        <div class="hero-stat-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-          </svg>
-          <span class="hero-stat-num"><?= number_format($total_berita) ?></span>
-          <span>Artikel Diterbitkan</span>
-        </div>
-        <div class="hero-stat-item" style="width:1px;height:28px;background:rgba(255,255,255,0.15);"></div>
-        <div class="hero-stat-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-          </svg>
-          <span>Diperbarui Rutin</span>
-        </div>
-        <div class="hero-stat-item" style="width:1px;height:28px;background:rgba(255,255,255,0.15);"></div>
-        <div class="hero-stat-item">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-          <span>Oleh Tim Humas Rutan Tanjung</span>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -688,7 +654,7 @@ $stmt->close();
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                Pemasyarakatan &amp; Layanan Publik
+                Seputar Rutan Tanjung
               </span>
               <h2 class="featured-title"><?= htmlspecialchars($berita_utama['judul']) ?></h2>
               <p class="featured-excerpt"><?= htmlspecialchars($excerpt_utama) ?></p>
