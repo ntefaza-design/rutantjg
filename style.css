@@ -988,10 +988,7 @@ input, textarea, select { font-family: inherit; }
 }
 
 .jadwal-poster-card {
-  grid-column: 1 / -1;
-  max-width: 620px;
   width: 100%;
-  margin: 0 auto;
 }
 
 .jadwal-card {
@@ -1001,6 +998,8 @@ input, textarea, select { font-family: inherit; }
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
+  display: flex;
+  flex-direction: column;
 }
 .jadwal-card:hover {
   box-shadow: var(--shadow-md);
@@ -1047,6 +1046,7 @@ input, textarea, select { font-family: inherit; }
   display: flex;
   flex-direction: column;
   gap: 14px;
+  flex: 1;
 }
 
 .schedule-row {
@@ -1111,7 +1111,7 @@ input, textarea, select { font-family: inherit; }
   font-size: 12.5px;
   color: var(--gray-600);
   line-height: 1.6;
-  margin-top: 4px;
+  margin-top: auto;
 }
 .jadwal-note svg { flex-shrink: 0; color: var(--primary); margin-top: 2px; }
 
@@ -1775,8 +1775,19 @@ input, textarea, select { font-family: inherit; }
 
 .sosmed-banner-avatar {
   flex-shrink: 0;
-  filter: drop-shadow(0 6px 18px rgba(220, 39, 67, 0.35));
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sosmed-banner-avatar.ig {
+  filter: drop-shadow(0 6px 18px rgba(220, 39, 67, 0.35));
+}
+.sosmed-banner-avatar.fb {
+  filter: drop-shadow(0 6px 18px rgba(24, 119, 242, 0.35));
+}
+.sosmed-banner-avatar.yt {
+  filter: drop-shadow(0 6px 18px rgba(255, 0, 0, 0.35));
+}
+.sosmed-banner-avatar.tw {
+  filter: drop-shadow(0 6px 18px rgba(15, 20, 25, 0.35));
 }
 .sosmed-banner-card:hover .sosmed-banner-avatar {
   transform: scale(1.05) rotate(3deg);
@@ -1795,11 +1806,22 @@ input, textarea, select { font-family: inherit; }
 .sosmed-banner-handle h3 {
   font-size: 1.35rem;
   font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.sosmed-banner-handle h3.handle-ig {
   background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #bc1888);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  letter-spacing: -0.3px;
+}
+.sosmed-banner-handle h3.handle-fb {
+  color: #1877f2;
+}
+.sosmed-banner-handle h3.handle-yt {
+  color: #ff0000;
+}
+.sosmed-banner-handle h3.handle-tw {
+  color: #0f1419;
 }
 .verified-badge {
   display: inline-flex;
@@ -1846,6 +1868,73 @@ input, textarea, select { font-family: inherit; }
 .btn-ig-follow-main:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 30px rgba(220, 39, 67, 0.45);
+  color: var(--white);
+}
+
+/* Sosmed Banners List (Vertical Downward Layout) */
+.sosmed-banners-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.sosmed-banners-list .sosmed-banner-card {
+  margin-bottom: 0;
+}
+
+.sosmed-banner-actions {
+  flex-shrink: 0;
+}
+
+.btn-channel-banner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 13px 20px;
+  width: 230px;
+  border-radius: 50px;
+  transition: var(--transition);
+  white-space: nowrap;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+.btn-channel-banner.ig {
+  background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  box-shadow: 0 6px 20px rgba(220, 39, 67, 0.35);
+}
+.btn-channel-banner.ig:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(220, 39, 67, 0.45);
+  color: var(--white);
+}
+.btn-channel-banner.fb {
+  background: #1877f2;
+  box-shadow: 0 6px 20px rgba(24, 119, 242, 0.35);
+}
+.btn-channel-banner.fb:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(24, 119, 242, 0.45);
+  color: var(--white);
+}
+.btn-channel-banner.yt {
+  background: #ff0000;
+  box-shadow: 0 6px 20px rgba(255, 0, 0, 0.35);
+}
+.btn-channel-banner.yt:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(255, 0, 0, 0.45);
+  color: var(--white);
+}
+.btn-channel-banner.tw {
+  background: #0f1419;
+  box-shadow: 0 6px 20px rgba(15, 20, 25, 0.35);
+}
+.btn-channel-banner.tw:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(15, 20, 25, 0.45);
   color: var(--white);
 }
 
@@ -2598,6 +2687,7 @@ input, textarea, select { font-family: inherit; }
   .sosmed-banner-left { flex-direction: column; align-items: flex-start; gap: 16px; }
   .sosmed-banner-actions { width: 100%; }
   .btn-ig-follow-main { width: 100%; justify-content: center; }
+  .btn-channel-banner { width: 100%; justify-content: center; }
   .ig-highlight-grid { grid-template-columns: 1fr; }
   .sosmed-channels-grid { grid-template-columns: repeat(2, 1fr); }
 

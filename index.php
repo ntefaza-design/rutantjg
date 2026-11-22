@@ -4,6 +4,32 @@ require_once __DIR__ . '/koneksi.php';
 // Ambil 1 berita terbaru untuk headline banner di layar tengah hero
 $headline_q = $conn->query("SELECT id, judul, slug, tanggal_dibuat FROM berita ORDER BY tanggal_dibuat DESC, id DESC LIMIT 1");
 $headline = ($headline_q && $headline_q->num_rows > 0) ? $headline_q->fetch_assoc() : null;
+
+// Ambil jadwal pelayanan dari database
+$stmt_jk = $conn->prepare("SELECT * FROM jadwal_pelayanan WHERE kategori = 'kunjungan' ORDER BY urutan ASC, id ASC");
+$stmt_jk->execute();
+$jadwal_kunjungan_rows = $stmt_jk->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt_jk->close();
+
+$stmt_jp = $conn->prepare("SELECT * FROM jadwal_pelayanan WHERE kategori = 'penitipan' ORDER BY urutan ASC, id ASC");
+$stmt_jp->execute();
+$jadwal_penitipan_rows = $stmt_jp->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt_jp->close();
+
+$catatan_penitipan_txt = 'Barang/makanan wajib sesuai ketentuan yang berlaku. Lihat poster syarat di bawah.';
+$catatan_kunjungan_txt = 'Pengunjung wajib mematuhi ketentuan yang berlaku. Lihat poster syarat di bawah.';
+
+$stmt_cp = $conn->prepare("SELECT kunci, nilai FROM pengaturan_jadwal WHERE kunci IN ('catatan_penitipan', 'catatan_kunjungan')");
+$stmt_cp->execute();
+$res_cp = $stmt_cp->get_result();
+while ($row_c = $res_cp->fetch_assoc()) {
+    if ($row_c['kunci'] === 'catatan_penitipan' && !empty($row_c['nilai'])) {
+        $catatan_penitipan_txt = $row_c['nilai'];
+    } elseif ($row_c['kunci'] === 'catatan_kunjungan' && !empty($row_c['nilai'])) {
+        $catatan_kunjungan_txt = $row_c['nilai'];
+    }
+}
+$stmt_cp->close();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -360,19 +386,37 @@ $headline = ($headline_q && $headline_q->num_rows > 0) ? $headline_q->fetch_asso
             </div>
           </div>
           <div class="jadwal-body">
-            <div class="schedule-row">
-              <span class="day-badge senin-jumat">Senin – Kamis</span>
-              <div class="time-info">
-                <span class="time-main">08.30 – 11.30 WITA</span>
-                <span class="time-note">Sesi Pagi</span>
-              </div>
-            </div>
-            <div class="schedule-row closed">
-              <span class="day-badge libur">Jum'at – Minggu &amp; Libur</span>
-              <div class="time-info">
-                <span class="time-main">Tutup</span>
-                <span class="time-note">Tidak ada kunjungan</span>
-              </div>
+            <?php if (!empty($jadwal_kunjungan_rows)): ?>
+              <?php foreach ($jadwal_kunjungan_rows as $row): 
+                $is_closed = (int)$row['is_tutup'] === 1;
+                $hari_lower = strtolower($row['hari']);
+                $badge_class = 'senin-jumat';
+                if ($is_closed || strpos($hari_lower, 'minggu') !== false || strpos($hari_lower, 'libur') !== false) {
+                  $badge_class = 'libur';
+                } elseif (strpos($hari_lower, 'sabtu') !== false || strpos($hari_lower, 'jum') !== false) {
+                  $badge_class = 'sabtu';
+                }
+              ?>
+                <div class="schedule-row<?= $is_closed ? ' closed' : '' ?>">
+                  <span class="day-badge <?= $badge_class ?>"><?= htmlspecialchars($row['hari']) ?></span>
+                  <div class="time-info">
+                    <span class="time-main"><?= htmlspecialchars($row['waktu']) ?></span>
+                    <?php if (!empty($row['keterangan'])): ?>
+                      <span class="time-note"><?= htmlspecialchars($row['keterangan']) ?></span>
+                    <?php endif; ?>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <div class="schedule-row"><span class="day-badge libur">Info</span><div class="time-info"><span class="time-main">Belum ada jadwal</span></div></div>
+            <?php endif; ?>
+            <div class="jadwal-note">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="13" />
+                <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor" stroke-width="1" />
+              </svg>
+              <?= htmlspecialchars($catatan_kunjungan_txt) ?>
             </div>
           </div>
         </div>
@@ -393,48 +437,67 @@ $headline = ($headline_q && $headline_q->num_rows > 0) ? $headline_q->fetch_asso
             </div>
           </div>
           <div class="jadwal-body">
-            <div class="schedule-row">
-              <span class="day-badge senin-jumat">Senin – Kamis</span>
-              <div class="time-info">
-                <span class="time-main">08.30 – 11.30 WITA</span>
-                <span class="time-note">Sesi Pagi</span>
-              </div>
-            </div>
-            <div class="schedule-row">
-              <span class="day-badge senin-jumat">Senin – Kamis</span>
-              <div class="time-info">
-                <span class="time-main">14.00 – 16.00 WITA</span>
-                <span class="time-note">Sesi Siang</span>
-              </div>
-            </div>
-            <div class="schedule-row">
-              <span class="day-badge sabtu">Jum'at &amp; Sabtu</span>
-              <div class="time-info">
-                <span class="time-main">08.30 – 11.30 WITA</span>
-                <span class="time-note">Sesi Pagi</span>
-              </div>
-            </div>
-            <div class="schedule-row closed">
-              <span class="day-badge libur">Minggu &amp; Hari Libur</span>
-              <div class="time-info">
-                <span class="time-main">Tutup</span>
-                <span class="time-note">Tidak ada layanan</span>
-              </div>
-            </div>
+            <?php if (!empty($jadwal_penitipan_rows)): ?>
+              <?php foreach ($jadwal_penitipan_rows as $row): 
+                $is_closed = (int)$row['is_tutup'] === 1;
+                $hari_lower = strtolower($row['hari']);
+                $badge_class = 'senin-jumat';
+                if ($is_closed || strpos($hari_lower, 'minggu') !== false || strpos($hari_lower, 'libur') !== false) {
+                  $badge_class = 'libur';
+                } elseif (strpos($hari_lower, 'sabtu') !== false || strpos($hari_lower, 'jum') !== false) {
+                  $badge_class = 'sabtu';
+                }
+              ?>
+                <div class="schedule-row<?= $is_closed ? ' closed' : '' ?>">
+                  <span class="day-badge <?= $badge_class ?>"><?= htmlspecialchars($row['hari']) ?></span>
+                  <div class="time-info">
+                    <span class="time-main"><?= htmlspecialchars($row['waktu']) ?></span>
+                    <?php if (!empty($row['keterangan'])): ?>
+                      <span class="time-note"><?= htmlspecialchars($row['keterangan']) ?></span>
+                    <?php endif; ?>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <div class="schedule-row"><span class="day-badge libur">Info</span><div class="time-info"><span class="time-main">Belum ada jadwal</span></div></div>
+            <?php endif; ?>
             <div class="jadwal-note">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="13" />
                 <circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="currentColor" stroke-width="1" />
               </svg>
-              Barang/makanan wajib sesuai ketentuan yang berlaku. Lihat poster syarat di bawah.
+              <?= htmlspecialchars($catatan_penitipan_txt) ?>
             </div>
           </div>
         </div>
 
+        <!-- Poster Syarat Kunjungan -->
+        <div class="jadwal-card jadwal-poster-card" id="jadwal-syarat-kunjungan"
+          onclick="openLightbox('gambar atau poster/Syarat dan ketentuan pengunjung.jpg','Syarat &amp; Ketentuan Pengunjung')"
+          style="cursor:zoom-in;">
+          <div class="jadwal-header">
+            <div class="jadwal-icon" style="background: linear-gradient(135deg, #0a2463, #1e3a8a);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+            </div>
+            <h3 class="jadwal-title">Syarat &amp; Ketentuan Pengunjung</h3>
+          </div>
+          <div class="jadwal-body"
+            style="padding: 16px; background: #f8fafc; display: flex; flex-direction: column; align-items: center; border-radius: 0 0 16px 16px;">
+            <img src="gambar atau poster/Syarat dan ketentuan pengunjung.jpg"
+              alt="Syarat dan Ketentuan Pengunjung"
+              style="width: 100%; max-height: 520px; object-fit: contain; display: block; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.06);" />
+          </div>
+        </div>
+
         <!-- Poster Syarat Penitipan -->
-        <div class="jadwal-card jadwal-poster-card" id="jadwal-syarat"
-          onclick="openLightbox('gambar atau poster/Syarat dan ketentuan penitipan barang_makanan.png','Syarat & Ketentuan Penitipan Barang/Makanan')"
+        <div class="jadwal-card jadwal-poster-card" id="jadwal-syarat-penitipan"
+          onclick="openLightbox('gambar atau poster/Syarat dan ketentuan penitipan barang_makanan.png','Syarat &amp; Ketentuan Penitipan Barang/Makanan')"
           style="cursor:zoom-in;">
           <div class="jadwal-header">
             <div class="jadwal-icon" style="background: linear-gradient(135deg, #7c3a00, #c05a00);">
@@ -585,337 +648,136 @@ $headline = ($headline_q && $headline_q->num_rows > 0) ? $headline_q->fetch_asso
     </div>
   </section>
 
-  <!-- ===== SOSIAL MEDIA KAMI / INSTAGRAM HIGHLIGHTS ===== -->
+  <!-- ===== SOSIAL MEDIA KAMI ===== -->
   <section class="section section-alt" id="sosmed">
     <div class="container">
       <div class="section-header">
         <span class="section-tag">Publikasi &amp; Informasi Terkini</span>
         <h2 class="section-title">Sosial Media Kami</h2>
-        <p class="section-desc">Ikuti kanal resmi Rutan Kelas IIB Tanjung dan simak sorotan postingan terhangat kami
-          langsung dari Instagram.</p>
+        <p class="section-desc">Ikuti seluruh kanal media sosial resmi Rumah Tahanan Negara Kelas IIB Tanjung untuk mendapatkan informasi terkini.</p>
       </div>
 
-      <!-- Instagram Official Profile Banner -->
-      <div class="sosmed-banner-card">
-        <div class="sosmed-banner-left">
-          <div class="sosmed-banner-avatar">
-            <svg viewBox="0 0 64 64" width="60" height="60" class="ig-avatar-svg">
-              <circle cx="32" cy="32" r="32" fill="url(#igBannerGrad)" />
-              <defs>
-                <radialGradient id="igBannerGrad" cx="30%" cy="105%" r="130%">
-                  <stop offset="0%" stop-color="#ffd879" />
-                  <stop offset="25%" stop-color="#f26522" />
-                  <stop offset="60%" stop-color="#d91a8a" />
-                  <stop offset="100%" stop-color="#5b4fe9" />
-                </radialGradient>
-              </defs>
-              <rect x="18" y="18" width="28" height="28" rx="8" fill="none" stroke="white" stroke-width="2.5" />
-              <circle cx="32" cy="32" r="6.5" fill="none" stroke="white" stroke-width="2.5" />
-              <circle cx="39.5" cy="24.5" r="2" fill="white" />
-            </svg>
+      <div class="sosmed-banners-list">
+        <!-- 1. Instagram -->
+        <div class="sosmed-banner-card" id="banner-instagram">
+          <div class="sosmed-banner-left">
+            <div class="sosmed-banner-avatar ig">
+              <svg viewBox="0 0 64 64" width="60" height="60" class="ig-avatar-svg">
+                <circle cx="32" cy="32" r="32" fill="url(#igBannerGrad)" />
+                <defs>
+                  <radialGradient id="igBannerGrad" cx="30%" cy="105%" r="130%">
+                    <stop offset="0%" stop-color="#ffd879" />
+                    <stop offset="25%" stop-color="#f26522" />
+                    <stop offset="60%" stop-color="#d91a8a" />
+                    <stop offset="100%" stop-color="#5b4fe9" />
+                  </radialGradient>
+                </defs>
+                <rect x="18" y="18" width="28" height="28" rx="8" fill="none" stroke="white" stroke-width="2.5" />
+                <circle cx="32" cy="32" r="6.5" fill="none" stroke="white" stroke-width="2.5" />
+                <circle cx="39.5" cy="24.5" r="2" fill="white" />
+              </svg>
+            </div>
+            <div class="sosmed-banner-info">
+              <div class="sosmed-banner-handle">
+                <h3 class="handle-ig">@rutan_tanjung</h3>
+              </div>
+              <p class="sosmed-banner-desc">Akun Instagram Resmi Rumah Tahanan Negara Kelas IIB Tanjung — Ditjen Pemasyarakatan</p>
+            </div>
           </div>
-          <div class="sosmed-banner-info">
-            <div class="sosmed-banner-handle">
-              <h3>@rutan_tanjung</h3>
-              <span class="verified-badge" title="Akun Terverifikasi">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="#1DA1F2">
-                  <path
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.2 14.2l-3.5-3.5 1.4-1.4 2.1 2.1 5.3-5.3 1.4 1.4-6.7 6.7z" />
-                </svg>
-              </span>
-            </div>
-            <p class="sosmed-banner-desc">Akun Instagram Resmi Rumah Tahanan Negara Kelas IIB Tanjung — Ditjen
-              Pemasyarakatan</p>
-          </div>
-        </div>
-        <div class="sosmed-banner-actions">
-          <a href="https://www.instagram.com/rutan_tanjung" target="_blank" rel="noopener" class="btn-ig-follow-main"
-            id="btn-ig-profile">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-            </svg>
-            Kunjungi Profil @rutan_tanjung
-          </a>
-        </div>
-      </div>
-
-      <!-- HIGHLIGHT POSTINGAN INSTAGRAM PILIHAN -->
-      <div class="ig-highlight-section">
-        <div class="ig-highlight-header">
-          <div class="ig-highlight-badge-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-              <polygon
-                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                fill="#c9a84c" stroke="#c9a84c" />
-            </svg>
-            <span>Sorotan Postingan Instagram Terpilih</span>
-          </div>
-          <p class="ig-highlight-subtitle">Postingan resmi pilihan seputar jadwal pelayanan kunjungan dan program
-            strategis kementerian</p>
-        </div>
-
-        <div class="ig-highlight-grid">
-          <!-- HIGHLIGHT 1: Jadwal Kunjungan dan Titipan -->
-          <article class="ig-post-card" id="highlight-post-jadwal">
-            <div class="ig-post-topbar">
-              <div class="ig-post-author">
-                <div class="ig-post-avatar-mini">
-                  <svg viewBox="0 0 32 32" width="28" height="28">
-                    <circle cx="16" cy="16" r="16" fill="url(#igBannerGrad)" />
-                    <rect x="9" y="9" width="14" height="14" rx="4" fill="none" stroke="white" stroke-width="1.6" />
-                    <circle cx="16" cy="16" r="3.2" fill="none" stroke="white" stroke-width="1.6" />
-                  </svg>
-                </div>
-                <div class="ig-post-meta">
-                  <div class="ig-post-username">
-                    <strong>rutan_tanjung</strong>
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="#1DA1F2">
-                      <path
-                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.2 14.2l-3.5-3.5 1.4-1.4 2.1 2.1 5.3-5.3 1.4 1.4-6.7 6.7z" />
-                    </svg>
-                  </div>
-                  <span class="ig-post-time">3 Agustus 2025 • Postingan Feed</span>
-                </div>
-              </div>
-              <span class="ig-type-badge feed">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-                Info Jadwal
-              </span>
-            </div>
-
-            <a href="https://www.instagram.com/p/DM4sNDPz7xw/?psln=MW1jMHhicDllMDR5Yw==" target="_blank" rel="noopener"
-              class="ig-post-media-wrap" aria-label="Buka postingan Jadwal Kunjungan di Instagram">
-              <img src="assets/ig-jadwal.jpg" alt="Jadwal Kunjungan dan Titipan di Rutan Kelas IIB Tanjung"
-                class="ig-post-img" loading="lazy" />
-              <div class="ig-media-overlay">
-                <div class="ig-media-icon-badge">
-                  <svg viewBox="0 0 24 24" fill="white" width="32" height="32">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="white"
-                      stroke-width="2" />
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill="none" stroke="white"
-                      stroke-width="2" />
-                    <circle cx="17.5" cy="6.5" r="1.5" fill="white" />
-                  </svg>
-                </div>
-                <span class="ig-overlay-text">Buka Postingan di Instagram ↗</span>
-              </div>
-            </a>
-
-            <div class="ig-post-content">
-              <div class="ig-post-engagements">
-                <div class="ig-eng-item likes" title="Jumlah Suka">
-                  <svg viewBox="0 0 24 24" fill="#e0245e" width="17" height="17">
-                    <path
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                  <span>94 Suka</span>
-                </div>
-                <div class="ig-eng-item comments" title="Jumlah Komentar">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17">
-                    <path
-                      d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                  </svg>
-                  <span>68 Komentar</span>
-                </div>
-              </div>
-
-              <h4 class="ig-post-title">Jadwal Kunjungan &amp; Titipan di Rutan Kelas IIB Tanjung</h4>
-              <p class="ig-post-caption">
-                Halo Sanak Rutansa. 😊 Berikut kami informasikan mengenai Jadwal Kunjungan dan Titipan di Rutan Kelas
-                IIB Tanjung. <em>*Jadwal dan ketentuan bisa berubah sewaktu-waktu.</em>
-              </p>
-
-              <div class="ig-post-hashtags">
-                <span>#Kemenimipas</span>
-                <span>#Ditjenpas</span>
-                <span>#Pemasyarakatan</span>
-                <span>#GuardandGuide</span>
-                <span>#RutanTanjung</span>
-              </div>
-
-              <div class="ig-post-footer">
-                <a href="https://www.instagram.com/p/DM4sNDPz7xw/?psln=MW1jMHhicDllMDR5Yw==" target="_blank"
-                  rel="noopener" class="btn-ig-action">
-                  <span>Lihat di Instagram</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
-                    <line x1="7" y1="17" x2="17" y2="7" />
-                    <polyline points="7 7 17 7 17 17" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          </article>
-
-          <!-- HIGHLIGHT 2: Reel 1 Tahun Perjalanan Kemenimipas -->
-          <article class="ig-post-card" id="highlight-post-reel">
-            <div class="ig-post-topbar">
-              <div class="ig-post-author">
-                <div class="ig-post-avatar-mini">
-                  <svg viewBox="0 0 32 32" width="28" height="28">
-                    <circle cx="16" cy="16" r="16" fill="url(#igBannerGrad)" />
-                    <rect x="9" y="9" width="14" height="14" rx="4" fill="none" stroke="white" stroke-width="1.6" />
-                    <circle cx="16" cy="16" r="3.2" fill="none" stroke="white" stroke-width="1.6" />
-                  </svg>
-                </div>
-                <div class="ig-post-meta">
-                  <div class="ig-post-username">
-                    <strong>rutan_tanjung</strong>
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="#1DA1F2">
-                      <path
-                        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.2 14.2l-3.5-3.5 1.4-1.4 2.1 2.1 5.3-5.3 1.4 1.4-6.7 6.7z" />
-                    </svg>
-                  </div>
-                  <span class="ig-post-time">20 Oktober 2025 • Video Reels</span>
-                </div>
-              </div>
-              <span class="ig-type-badge reel">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
-                  <path
-                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
-                </svg>
-                Instagram Reels
-              </span>
-            </div>
-
-            <a href="https://www.instagram.com/reel/DQDCEvnAgFJ/?exln=MTVhcTBuMmtyOGJpeg==" target="_blank"
-              rel="noopener" class="ig-post-media-wrap is-reel" aria-label="Tonton Reel Kemenimipas di Instagram">
-              <img src="assets/ig-kemenimipas.jpg"
-                alt="1 Tahun Perjalanan Kemenimipas 13 Program Akselerasi Menteri Imipas" class="ig-post-img"
-                loading="lazy" />
-              <div class="ig-reel-center-play">
-                <div class="ig-reel-play-circle">
-                  <svg viewBox="0 0 24 24" fill="white" width="28" height="28">
-                    <polygon points="9.5 7.5 16.5 12 9.5 16.5" />
-                  </svg>
-                </div>
-              </div>
-              <div class="ig-media-overlay">
-                <span class="ig-overlay-text">Tonton Video di Instagram ↗</span>
-              </div>
-            </a>
-
-            <div class="ig-post-content">
-              <div class="ig-post-engagements">
-                <div class="ig-eng-item likes" title="Jumlah Suka">
-                  <svg viewBox="0 0 24 24" fill="#e0245e" width="17" height="17">
-                    <path
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                  <span>88 Suka</span>
-                </div>
-                <div class="ig-eng-item comments" title="Jumlah Komentar">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17">
-                    <path
-                      d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-                  </svg>
-                  <span>66 Komentar</span>
-                </div>
-                <div class="ig-eng-item views" title="Tipe Konten">
-                  <span class="reel-pill">🎬 Video Reels</span>
-                </div>
-              </div>
-
-              <h4 class="ig-post-title">1 Tahun Kemenimipas — 13 Program Akselerasi &amp; Asta Cita</h4>
-              <p class="ig-post-caption">
-                Kementerian Imigrasi dan Pemasyarakatan (Kemenimipas) terus memperkuat pelaksanaan 13 Program Akselerasi
-                Menteri Imipas sebagai tindak lanjut nyata atas Asta Cita Presiden Prabowo dan Kabinet Merah Putih.
-              </p>
-
-              <div class="ig-post-hashtags">
-                <span>#AgusAndrianto</span>
-                <span>#Kemenimipas</span>
-                <span>#KabinetMerahPutih</span>
-                <span>#IndonesiaEmas2045</span>
-                <span>#SetahunBerdampak</span>
-              </div>
-
-              <div class="ig-post-footer">
-                <a href="https://www.instagram.com/reel/DQDCEvnAgFJ/?exln=MTVhcTBuMmtyOGJpeg==" target="_blank"
-                  rel="noopener" class="btn-ig-action">
-                  <span>Tonton di Instagram</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
-                    <line x1="7" y1="17" x2="17" y2="7" />
-                    <polyline points="7 7 17 7 17 17" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          </article>
-        </div>
-      </div>
-
-      <!-- KANAL MEDIA SOSIAL RESMI RUTAN TANJUNG -->
-      <div class="sosmed-channels-section">
-        <h4 class="sosmed-channels-title">Kanal Media Sosial Resmi Rutan Tanjung</h4>
-        <div class="sosmed-channels-grid">
-          <a href="https://www.instagram.com/rutan_tanjung" target="_blank" rel="noopener"
-            class="sosmed-channel-card ig" id="channel-instagram">
-            <div class="channel-icon-wrap ig">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+          <div class="sosmed-banner-actions">
+            <a href="https://www.instagram.com/rutan_tanjung" target="_blank" rel="noopener" class="btn-channel-banner ig" id="btn-ig-profile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
               </svg>
-            </div>
-            <div class="channel-info">
-              <strong>Instagram</strong>
-              <span>@rutan_tanjung</span>
-            </div>
-            <span class="channel-arrow">→</span>
-          </a>
+              <span>Kunjungi Instagram ↗</span>
+            </a>
+          </div>
+        </div>
 
-          <a href="https://www.facebook.com/share/14nipLTAWgD/" target="_blank" rel="noopener" class="sosmed-channel-card fb"
-            id="channel-facebook">
-            <div class="channel-icon-wrap fb">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+        <!-- 2. Facebook -->
+        <div class="sosmed-banner-card" id="banner-facebook">
+          <div class="sosmed-banner-left">
+            <div class="sosmed-banner-avatar fb">
+              <svg viewBox="0 0 64 64" width="60" height="60">
+                <circle cx="32" cy="32" r="32" fill="#1877f2" />
+                <path d="M37 20h-4a6 6 0 0 0-6 6v4h-4v6h4v14h6V36h4.5l.8-6H33v-3.5a1.5 1.5 0 0 1 1.5-1.5H37z" fill="white" />
+              </svg>
+            </div>
+            <div class="sosmed-banner-info">
+              <div class="sosmed-banner-handle">
+                <h3 class="handle-fb">Rutan Tanjung</h3>
+              </div>
+              <p class="sosmed-banner-desc">Halaman Facebook Resmi Rumah Tahanan Negara Kelas IIB Tanjung</p>
+            </div>
+          </div>
+          <div class="sosmed-banner-actions">
+            <a href="https://www.facebook.com/share/14nipLTAWgD/" target="_blank" rel="noopener" class="btn-channel-banner fb" id="btn-fb-profile">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
                 <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
               </svg>
-            </div>
-            <div class="channel-info">
-              <strong>Facebook</strong>
-              <span>Rutan Tanjung</span>
-            </div>
-            <span class="channel-arrow">→</span>
-          </a>
+              <span>Kunjungi Facebook ↗</span>
+            </a>
+          </div>
+        </div>
 
-          <a href="https://youtube.com/@rutantanjung?si=2dmk1-x2Z7LyfAdb" target="_blank" rel="noopener" class="sosmed-channel-card yt"
-            id="channel-youtube">
-            <div class="channel-icon-wrap yt">
-              <svg viewBox="0 0 24 24" width="24" height="24">
-                <path
-                  d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"
-                  fill="#ffffff" />
+        <!-- 3. YouTube -->
+        <div class="sosmed-banner-card" id="banner-youtube">
+          <div class="sosmed-banner-left">
+            <div class="sosmed-banner-avatar yt">
+              <svg viewBox="0 0 64 64" width="60" height="60">
+                <circle cx="32" cy="32" r="32" fill="#ff0000" />
+                <path d="M46 26.5c-.3-1.6-1.5-2.8-3.1-3.1C40.2 23 32 23 32 23s-8.2 0-10.9.4c-1.6.3-2.8 1.5-3.1 3.1-.4 2.7-.4 5.5-.4 5.5s0 2.8.4 5.5c.3 1.6 1.5 2.8 3.1 3.1 2.7.4 10.9.4 10.9.4s8.2 0 10.9-.4c1.6-.3 2.8-1.5 3.1-3.1.4-2.7.4-5.5.4-5.5s0-2.8-.4-5.5z" fill="white" />
+                <polygon points="29 27.5 37 32 29 36.5" fill="#ff0000" />
+              </svg>
+            </div>
+            <div class="sosmed-banner-info">
+              <div class="sosmed-banner-handle">
+                <h3 class="handle-yt">@rutantanjung</h3>
+              </div>
+              <p class="sosmed-banner-desc">Saluran YouTube Resmi Rutan Kelas IIB Tanjung — Publikasi Kegiatan &amp; Video Edukasi</p>
+            </div>
+          </div>
+          <div class="sosmed-banner-actions">
+            <a href="https://youtube.com/@rutantanjung?si=2dmk1-x2Z7LyfAdb" target="_blank" rel="noopener" class="btn-channel-banner yt" id="btn-yt-profile">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" />
                 <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#ff0000" />
               </svg>
-            </div>
-            <div class="channel-info">
-              <strong>YouTube</strong>
-              <span>@rutantanjung</span>
-            </div>
-            <span class="channel-arrow">→</span>
-          </a>
+              <span>Kunjungi YouTube ↗</span>
+            </a>
+          </div>
+        </div>
 
-          <a href="https://x.com/HumasRutansa" target="_blank" rel="noopener" class="sosmed-channel-card x-twitter"
-            id="channel-x">
-            <div class="channel-icon-wrap tw">
-              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        <!-- 4. X (Twitter) -->
+        <div class="sosmed-banner-card" id="banner-x">
+          <div class="sosmed-banner-left">
+            <div class="sosmed-banner-avatar tw">
+              <svg viewBox="0 0 64 64" width="60" height="60">
+                <circle cx="32" cy="32" r="32" fill="#0f1419" />
+                <path d="M39.6 20h4.3l-9.4 10.8 11.1 14.6h-8.7l-6.8-8.9-7.8 8.9h-4.3l10.1-11.5L17.5 20h8.9l6.1 8.1zm-1.5 22.8h2.4L25.9 22.4h-2.6z" fill="white" />
               </svg>
             </div>
-            <div class="channel-info">
-              <strong>X (Twitter)</strong>
-              <span>@HumasRutansa</span>
+            <div class="sosmed-banner-info">
+              <div class="sosmed-banner-handle">
+                <h3 class="handle-tw">@HumasRutansa</h3>
+              </div>
+              <p class="sosmed-banner-desc">Akun Resmi Humas Rumah Tahanan Negara Kelas IIB Tanjung di X (Twitter)</p>
             </div>
-            <span class="channel-arrow">→</span>
-          </a>
+          </div>
+          <div class="sosmed-banner-actions">
+            <a href="https://x.com/HumasRutansa" target="_blank" rel="noopener" class="btn-channel-banner tw" id="btn-tw-profile">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              <span>Kunjungi X (Twitter) ↗</span>
+            </a>
+          </div>
         </div>
       </div>
+    </div>
+  </section>
     </div>
   </section>
 

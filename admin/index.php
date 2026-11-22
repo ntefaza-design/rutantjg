@@ -253,6 +253,142 @@ if ($action === 'edit' && $edit_id > 0) {
         exit;
     }
 }
+
+// ==========================================
+// PENGATURAN TAB (berita | jadwal)
+// ==========================================
+$tab = $_GET['tab'] ?? 'berita';
+
+// ==========================================
+// PROSES CRUD: JADWAL PELAYANAN
+// ==========================================
+
+// 1. Simpan Catatan Ketentuan Pelayanan
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_simpan_catatan'])) {
+    $catatan_penitipan = trim($_POST['catatan_penitipan'] ?? '');
+    $catatan_kunjungan = trim($_POST['catatan_kunjungan'] ?? '');
+
+    $stmt_cp = $conn->prepare("INSERT INTO pengaturan_jadwal (kunci, nilai) VALUES ('catatan_penitipan', ?) ON DUPLICATE KEY UPDATE nilai = VALUES(nilai)");
+    $stmt_cp->bind_param("s", $catatan_penitipan);
+    $stmt_cp->execute();
+    $stmt_cp->close();
+
+    $stmt_ck = $conn->prepare("INSERT INTO pengaturan_jadwal (kunci, nilai) VALUES ('catatan_kunjungan', ?) ON DUPLICATE KEY UPDATE nilai = VALUES(nilai)");
+    $stmt_ck->bind_param("s", $catatan_kunjungan);
+    $stmt_ck->execute();
+    $stmt_ck->close();
+
+    $_SESSION['flash_sukses'] = 'Catatan ketentuan pelayanan berhasil disimpan!';
+    header("Location: index.php?tab=jadwal");
+    exit;
+}
+
+// 2. Tambah Baris Jadwal Baru (Create)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah_jadwal'])) {
+    $kategori   = in_array($_POST['kategori'] ?? '', ['kunjungan', 'penitipan']) ? $_POST['kategori'] : 'kunjungan';
+    $hari       = trim($_POST['hari'] ?? '');
+    $waktu      = trim($_POST['waktu'] ?? '');
+    $keterangan = trim($_POST['keterangan'] ?? '');
+    $is_tutup   = isset($_POST['is_tutup']) ? 1 : 0;
+    $urutan     = (int)($_POST['urutan'] ?? 1);
+
+    if (empty($hari) || empty($waktu)) {
+        $_SESSION['flash_error'] = 'Hari dan Jam/Waktu pelayanan wajib diisi!';
+    } else {
+        $stmt_ins = $conn->prepare("INSERT INTO jadwal_pelayanan (kategori, hari, waktu, keterangan, is_tutup, urutan) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt_ins->bind_param("ssssii", $kategori, $hari, $waktu, $keterangan, $is_tutup, $urutan);
+        if ($stmt_ins->execute()) {
+            $_SESSION['flash_sukses'] = 'Baris jadwal baru berhasil ditambahkan!';
+        } else {
+            $_SESSION['flash_error'] = 'Gagal menambahkan jadwal: ' . $stmt_ins->error;
+        }
+        $stmt_ins->close();
+    }
+    header("Location: index.php?tab=jadwal");
+    exit;
+}
+
+// 3. Edit Baris Jadwal (Update)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit_jadwal'])) {
+    $id_jadwal  = (int)($_POST['id_jadwal'] ?? 0);
+    $kategori   = in_array($_POST['kategori'] ?? '', ['kunjungan', 'penitipan']) ? $_POST['kategori'] : 'kunjungan';
+    $hari       = trim($_POST['hari'] ?? '');
+    $waktu      = trim($_POST['waktu'] ?? '');
+    $keterangan = trim($_POST['keterangan'] ?? '');
+    $is_tutup   = isset($_POST['is_tutup']) ? 1 : 0;
+    $urutan     = (int)($_POST['urutan'] ?? 1);
+
+    if ($id_jadwal <= 0 || empty($hari) || empty($waktu)) {
+        $_SESSION['flash_error'] = 'Data jadwal tidak lengkap atau tidak valid!';
+    } else {
+        $stmt_upd = $conn->prepare("UPDATE jadwal_pelayanan SET kategori = ?, hari = ?, waktu = ?, keterangan = ?, is_tutup = ?, urutan = ? WHERE id = ?");
+        $stmt_upd->bind_param("ssssiii", $kategori, $hari, $waktu, $keterangan, $is_tutup, $urutan, $id_jadwal);
+        if ($stmt_upd->execute()) {
+            $_SESSION['flash_sukses'] = 'Baris jadwal berhasil diperbarui!';
+        } else {
+            $_SESSION['flash_error'] = 'Gagal memperbarui jadwal: ' . $stmt_upd->error;
+        }
+        $stmt_upd->close();
+    }
+    header("Location: index.php?tab=jadwal");
+    exit;
+}
+
+// 4. Hapus Baris Jadwal (Delete)
+if (isset($_GET['hapus_jadwal'])) {
+    $id_hapus = (int)$_GET['hapus_jadwal'];
+    if ($id_hapus > 0) {
+        $stmt_del = $conn->prepare("DELETE FROM jadwal_pelayanan WHERE id = ?");
+        $stmt_del->bind_param("i", $id_hapus);
+        if ($stmt_del->execute()) {
+            $_SESSION['flash_sukses'] = 'Baris jadwal berhasil dihapus!';
+        } else {
+            $_SESSION['flash_error'] = 'Gagal menghapus jadwal: ' . $stmt_del->error;
+        }
+        $stmt_del->close();
+    }
+    header("Location: index.php?tab=jadwal");
+    exit;
+}
+
+// Data untuk form edit jadwal jika parameter edit_jadwal ada
+$jadwal_edit_data = null;
+$jadwal_edit_id = isset($_GET['edit_jadwal']) ? (int)$_GET['edit_jadwal'] : 0;
+if ($jadwal_edit_id > 0) {
+    $stmt_je = $conn->prepare("SELECT * FROM jadwal_pelayanan WHERE id = ? LIMIT 1");
+    $stmt_je->bind_param("i", $jadwal_edit_id);
+    $stmt_je->execute();
+    $jadwal_edit_data = $stmt_je->get_result()->fetch_assoc();
+    $stmt_je->close();
+    if ($jadwal_edit_data) {
+        $tab = 'jadwal';
+    }
+}
+
+// Ambil data semua baris jadwal untuk tampilan tab jadwal
+$stmt_jk_all = $conn->prepare("SELECT * FROM jadwal_pelayanan WHERE kategori = 'kunjungan' ORDER BY urutan ASC, id ASC");
+$stmt_jk_all->execute();
+$list_jadwal_kunjungan = $stmt_jk_all->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt_jk_all->close();
+
+$stmt_jp_all = $conn->prepare("SELECT * FROM jadwal_pelayanan WHERE kategori = 'penitipan' ORDER BY urutan ASC, id ASC");
+$stmt_jp_all->execute();
+$list_jadwal_penitipan = $stmt_jp_all->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt_jp_all->close();
+
+$catatan_penitipan_val = '';
+$catatan_kunjungan_val = '';
+$stmt_cp_val = $conn->prepare("SELECT kunci, nilai FROM pengaturan_jadwal WHERE kunci IN ('catatan_penitipan', 'catatan_kunjungan')");
+$stmt_cp_val->execute();
+$res_cp_val = $stmt_cp_val->get_result();
+while ($row_c = $res_cp_val->fetch_assoc()) {
+    if ($row_c['kunci'] === 'catatan_penitipan') {
+        $catatan_penitipan_val = $row_c['nilai'];
+    } elseif ($row_c['kunci'] === 'catatan_kunjungan') {
+        $catatan_kunjungan_val = $row_c['nilai'];
+    }
+}
+$stmt_cp_val->close();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -950,6 +1086,61 @@ if ($action === 'edit' && $edit_id > 0) {
       color: var(--gray-600);
       margin-top: auto;
     }
+
+    /* Tab Navigasi Admin */
+    .admin-tabs-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--gray-200);
+      padding-bottom: 0;
+    }
+    .admin-tab-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 24px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--gray-600);
+      text-decoration: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s ease;
+      border-radius: 8px 8px 0 0;
+    }
+    .admin-tab-item:hover {
+      color: var(--primary);
+      background: rgba(10, 36, 99, 0.04);
+    }
+    .admin-tab-item.active {
+      color: var(--primary-dark);
+      background: var(--white);
+      border-bottom: 3px solid var(--gold);
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+    }
+    .badge-jadwal-buka {
+      background: #dcfce7;
+      color: #15803d;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .badge-jadwal-tutup {
+      background: #f1f5f9;
+      color: #64748b;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
   </style>
 </head>
 <body>
@@ -1066,6 +1257,30 @@ if ($action === 'edit' && $edit_id > 0) {
       </div>
     </div>
 
+    <!-- Tab Navigasi Admin -->
+    <div class="admin-tabs-nav">
+      <a href="index.php?tab=berita" class="admin-tab-item <?= ($tab !== 'jadwal') ? 'active' : '' ?>">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+        Manajemen Berita
+      </a>
+      <a href="index.php?tab=jadwal" class="admin-tab-item <?= ($tab === 'jadwal') ? 'active' : '' ?>">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Kelola Jadwal Pelayanan
+      </a>
+    </div>
+
+    <?php if ($tab !== 'jadwal'): ?>
     <!-- ============================================== -->
     <!-- TAMPILAN 1: FORM TAMBAH BERITA -->
     <!-- ============================================== -->
@@ -1371,6 +1586,289 @@ if ($action === 'edit' && $edit_id > 0) {
         </div>
       </div>
     <?php endif; ?>
+    <?php endif; // Akhir Tab Berita ?>
+
+    <!-- ============================================== -->
+    <!-- TAB: KELOLA JADWAL PELAYANAN -->
+    <!-- ============================================== -->
+    <?php if ($tab === 'jadwal'): ?>
+
+      <!-- 1. FORM TAMBAH / EDIT JADWAL -->
+      <div class="content-box" style="margin-bottom: 28px;">
+        <div class="content-box-header">
+          <div class="content-box-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <?= $jadwal_edit_data ? 'Edit Baris Jadwal Pelayanan' : 'Tambah Baris Jadwal Pelayanan Baru' ?>
+          </div>
+          <?php if ($jadwal_edit_data): ?>
+            <a href="index.php?tab=jadwal" class="btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              Batal Edit (Tambah Baru)
+            </a>
+          <?php endif; ?>
+        </div>
+
+        <form method="POST" action="index.php?tab=jadwal" class="news-form" style="padding: 24px 28px;">
+          <?php if ($jadwal_edit_data): ?>
+            <input type="hidden" name="id_jadwal" value="<?= (int)$jadwal_edit_data['id'] ?>">
+          <?php endif; ?>
+
+          <div class="form-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+            <div class="form-group">
+              <label class="form-label">Kategori Pelayanan <span class="required">*</span></label>
+              <select name="kategori" class="form-control" required style="cursor:pointer;">
+                <option value="kunjungan" <?= (($jadwal_edit_data['kategori'] ?? '') === 'kunjungan') ? 'selected' : '' ?>>Jadwal Kunjungan</option>
+                <option value="penitipan" <?= (($jadwal_edit_data['kategori'] ?? '') === 'penitipan') ? 'selected' : '' ?>>Penitipan Barang / Makanan</option>
+              </select>
+              <div class="form-help">Pilih kategori kartu pelayanan yang dituju.</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Hari Pelayanan <span class="required">*</span></label>
+              <input type="text" name="hari" class="form-control" placeholder="Contoh: Senin – Kamis, Jum'at &amp; Sabtu" value="<?= htmlspecialchars($jadwal_edit_data['hari'] ?? '') ?>" required>
+              <div class="form-help">Contoh: Senin – Kamis, Jum'at &amp; Sabtu, Minggu &amp; Hari Libur.</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Jam / Waktu Pelayanan <span class="required">*</span></label>
+              <input type="text" name="waktu" class="form-control" placeholder="Contoh: 08.30 – 11.30 WITA atau Tutup" value="<?= htmlspecialchars($jadwal_edit_data['waktu'] ?? '') ?>" required>
+              <div class="form-help">Ketik jam operasional, atau isi "Tutup" jika libur.</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Keterangan Sesi</label>
+              <input type="text" name="keterangan" class="form-control" placeholder="Contoh: Sesi Pagi, Sesi Siang, Tidak ada kunjungan" value="<?= htmlspecialchars($jadwal_edit_data['keterangan'] ?? '') ?>">
+              <div class="form-help">Keterangan tambahan di bawah jam pelayanan (opsional).</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Nomor Urutan Tampilan</label>
+              <input type="number" name="urutan" class="form-control" min="1" max="99" value="<?= htmlspecialchars($jadwal_edit_data['urutan'] ?? '1') ?>" required>
+              <div class="form-help">Angka urutan posisi baris (1 = baris teratas).</div>
+            </div>
+
+            <div class="form-group" style="display:flex; flex-direction:column; justify-content:center;">
+              <label class="form-label">Opsi Status Tutup</label>
+              <label style="display:flex; align-items:center; gap:10px; cursor:pointer; padding:10px 14px; background:var(--gray-50); border:1px solid var(--gray-200); border-radius:8px;">
+                <input type="checkbox" name="is_tutup" value="1" <?= (!empty($jadwal_edit_data['is_tutup'])) ? 'checked' : '' ?> style="width:18px; height:18px; accent-color:var(--danger); cursor:pointer;">
+                <span style="font-weight:600; font-size:0.9rem; color:var(--gray-800);">Tandai sebagai Status <strong>TUTUP</strong> (badge redup/abu-abu)</span>
+              </label>
+              <div class="form-help">Centang jika baris ini menyatakan pelayanan libur/tutup.</div>
+            </div>
+          </div>
+
+          <div class="form-actions-bar">
+            <?php if ($jadwal_edit_data): ?>
+              <button type="submit" name="proses_edit_jadwal" class="btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Simpan Perubahan Jadwal
+              </button>
+              <a href="index.php?tab=jadwal" class="btn-secondary">Batal</a>
+            <?php else: ?>
+              <button type="submit" name="proses_tambah_jadwal" class="btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 5v14M5 12h14"></path>
+                </svg>
+                Tambah Baris Jadwal
+              </button>
+            <?php endif; ?>
+          </div>
+        </form>
+      </div>
+
+      <!-- 2. TABEL DAFTAR JADWAL KUNJUNGAN -->
+      <div class="content-box" style="margin-bottom: 28px;">
+        <div class="content-box-header">
+          <div class="content-box-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            Daftar Jadwal Kunjungan (<?= count($list_jadwal_kunjungan) ?> Baris)
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table-news">
+            <thead>
+              <tr>
+                <th style="width:60px; text-align:center;">Urutan</th>
+                <th>Hari</th>
+                <th>Jam / Waktu Pelayanan</th>
+                <th>Keterangan Sesi</th>
+                <th style="width:120px; text-align:center;">Status</th>
+                <th style="width:140px; text-align:center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (!empty($list_jadwal_kunjungan)): ?>
+                <?php foreach ($list_jadwal_kunjungan as $jd): ?>
+                  <tr>
+                    <td style="text-align:center; font-weight:700; color:var(--primary);"><?= (int)$jd['urutan'] ?></td>
+                    <td><strong><?= htmlspecialchars($jd['hari']) ?></strong></td>
+                    <td><span style="font-family:monospace; font-size:0.95rem; font-weight:600;"><?= htmlspecialchars($jd['waktu']) ?></span></td>
+                    <td style="color:var(--gray-600);"><?= !empty($jd['keterangan']) ? htmlspecialchars($jd['keterangan']) : '—' ?></td>
+                    <td style="text-align:center;">
+                      <?php if ((int)$jd['is_tutup'] === 1): ?>
+                        <span class="badge-jadwal-tutup">TUTUP</span>
+                      <?php else: ?>
+                        <span class="badge-jadwal-buka">BUKA</span>
+                      <?php endif; ?>
+                    </td>
+                    <td style="text-align:center;">
+                      <div class="table-actions" style="justify-content:center;">
+                        <a href="index.php?tab=jadwal&edit_jadwal=<?= (int)$jd['id'] ?>" class="btn-action edit" title="Edit Baris Jadwal">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                          Edit
+                        </a>
+                        <a href="index.php?tab=jadwal&hapus_jadwal=<?= (int)$jd['id'] ?>" class="btn-action delete" title="Hapus Baris Jadwal" onclick="return confirm('Apakah Anda yakin ingin menghapus jadwal <?= htmlspecialchars($jd['hari']) ?>?');">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                          Hapus
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <tr>
+                  <td colspan="6" style="text-align:center; padding:30px; color:var(--gray-600);">Belum ada jadwal kunjungan yang diatur. Silakan tambah baris jadwal baru di atas.</td>
+                </tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. TABEL DAFTAR JADWAL PENITIPAN BARANG / MAKANAN -->
+      <div class="content-box" style="margin-bottom: 28px;">
+        <div class="content-box-header">
+          <div class="content-box-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            Daftar Jadwal Penitipan Barang / Makanan (<?= count($list_jadwal_penitipan) ?> Baris)
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table-news">
+            <thead>
+              <tr>
+                <th style="width:60px; text-align:center;">Urutan</th>
+                <th>Hari</th>
+                <th>Jam / Waktu Pelayanan</th>
+                <th>Keterangan Sesi</th>
+                <th style="width:120px; text-align:center;">Status</th>
+                <th style="width:140px; text-align:center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (!empty($list_jadwal_penitipan)): ?>
+                <?php foreach ($list_jadwal_penitipan as $jd): ?>
+                  <tr>
+                    <td style="text-align:center; font-weight:700; color:var(--primary);"><?= (int)$jd['urutan'] ?></td>
+                    <td><strong><?= htmlspecialchars($jd['hari']) ?></strong></td>
+                    <td><span style="font-family:monospace; font-size:0.95rem; font-weight:600;"><?= htmlspecialchars($jd['waktu']) ?></span></td>
+                    <td style="color:var(--gray-600);"><?= !empty($jd['keterangan']) ? htmlspecialchars($jd['keterangan']) : '—' ?></td>
+                    <td style="text-align:center;">
+                      <?php if ((int)$jd['is_tutup'] === 1): ?>
+                        <span class="badge-jadwal-tutup">TUTUP</span>
+                      <?php else: ?>
+                        <span class="badge-jadwal-buka">BUKA</span>
+                      <?php endif; ?>
+                    </td>
+                    <td style="text-align:center;">
+                      <div class="table-actions" style="justify-content:center;">
+                        <a href="index.php?tab=jadwal&edit_jadwal=<?= (int)$jd['id'] ?>" class="btn-action edit" title="Edit Baris Jadwal">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                          Edit
+                        </a>
+                        <a href="index.php?tab=jadwal&hapus_jadwal=<?= (int)$jd['id'] ?>" class="btn-action delete" title="Hapus Baris Jadwal" onclick="return confirm('Apakah Anda yakin ingin menghapus jadwal <?= htmlspecialchars($jd['hari']) ?>?');">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                          Hapus
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <tr>
+                  <td colspan="6" style="text-align:center; padding:30px; color:var(--gray-600);">Belum ada jadwal penitipan yang diatur. Silakan tambah baris jadwal baru di atas.</td>
+                </tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 4. FORM EDIT CATATAN KETENTUAN PELAYANAN -->
+      <div class="content-box">
+        <div class="content-box-header">
+          <div class="content-box-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            Catatan Ketentuan Pelayanan (Kunjungan &amp; Penitipan)
+          </div>
+        </div>
+
+        <form method="POST" action="index.php?tab=jadwal" class="news-form" style="padding: 24px 28px;">
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label">Teks Catatan di Bawah Kartu Jadwal Kunjungan</label>
+            <textarea name="catatan_kunjungan" class="form-control" rows="2" placeholder="Tuliskan catatan atau himbauan terkait kunjungan..." required><?= htmlspecialchars($catatan_kunjungan_val) ?></textarea>
+            <div class="form-help">Teks ini akan ditampilkan dengan ikon informasi di bawah baris jadwal kunjungan pada halaman utama.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Teks Catatan di Bawah Kartu Penitipan Barang / Makanan</label>
+            <textarea name="catatan_penitipan" class="form-control" rows="2" placeholder="Tuliskan catatan atau himbauan terkait penitipan..." required><?= htmlspecialchars($catatan_penitipan_val) ?></textarea>
+            <div class="form-help">Teks ini akan ditampilkan dengan ikon informasi di bawah baris jadwal penitipan pada halaman utama.</div>
+          </div>
+
+          <div class="form-actions-bar">
+            <button type="submit" name="proses_simpan_catatan" class="btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              Simpan Catatan Ketentuan
+            </button>
+          </div>
+        </form>
+      </div>
+
+    <?php endif; // Akhir Tab Jadwal ?>
 
   </main>
 

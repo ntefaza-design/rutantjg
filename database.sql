@@ -67,3 +67,46 @@ INSERT INTO `berita` (`id`, `judul`, `slug`, `isi`, `gambar`, `penulis`, `tangga
  'Tim Humas & TI',
  NOW())
 ON DUPLICATE KEY UPDATE `judul` = `judul`;
+
+-- --------------------------------------------------------
+-- 3. Struktur Tabel `jadwal_pelayanan`
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `jadwal_pelayanan` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `kategori` ENUM('kunjungan', 'penitipan') NOT NULL,
+  `hari` VARCHAR(100) NOT NULL,
+  `waktu` VARCHAR(100) NOT NULL,
+  `keterangan` VARCHAR(150) DEFAULT '',
+  `is_tutup` TINYINT(1) DEFAULT 0,
+  `urutan` INT DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Data Awal `jadwal_pelayanan`
+-- --------------------------------------------------------
+INSERT INTO `jadwal_pelayanan` (`id`, `kategori`, `hari`, `waktu`, `keterangan`, `is_tutup`, `urutan`) VALUES
+(1, 'kunjungan', 'Senin � Kamis', '08.30 � 11.30 WITA', 'Sesi Pagi', 0, 1),
+(2, 'kunjungan', 'Jum\'at � Minggu & Libur', 'Tutup', 'Tidak ada kunjungan', 1, 2),
+(3, 'penitipan', 'Senin � Kamis', '08.30 � 11.30 WITA', 'Sesi Pagi', 0, 1),
+(4, 'penitipan', 'Senin � Kamis', '14.00 � 16.00 WITA', 'Sesi Siang', 0, 2),
+(5, 'penitipan', 'Jum\'at & Sabtu', '08.30 � 11.30 WITA', 'Sesi Pagi', 0, 3),
+(6, 'penitipan', 'Minggu & Hari Libur', 'Tutup', 'Tidak ada layanan', 1, 4)
+ON DUPLICATE KEY UPDATE `hari` = VALUES(`hari`);
+
+-- --------------------------------------------------------
+-- 4. Struktur Tabel `pengaturan_jadwal`
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `pengaturan_jadwal` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `kunci` VARCHAR(100) NOT NULL UNIQUE,
+  `nilai` TEXT NOT NULL,
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Data Awal `pengaturan_jadwal`
+-- --------------------------------------------------------
+INSERT INTO `pengaturan_jadwal` (`id`, `kunci`, `nilai`) VALUES
+(1, 'catatan_penitipan', 'Barang/makanan wajib sesuai ketentuan yang berlaku. Lihat poster syarat di bawah.'),
+(2, 'catatan_kunjungan', 'Pengunjung wajib mematuhi ketentuan yang berlaku. Lihat poster syarat di bawah.')
+ON DUPLICATE KEY UPDATE `nilai` = VALUES(`nilai`);
