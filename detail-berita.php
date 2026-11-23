@@ -506,12 +506,21 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
 
             <div class="article-content">
               <?php
-                // Tampilkan paragraf dengan format rapi
+                // Fungsi auto-link: konversi URL plain text menjadi <a> yang bisa diklik
+                function auto_link_text($text) {
+                    // Escape HTML terlebih dahulu untuk keamanan
+                    $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+                    // Konversi URL http/https menjadi link
+                    $pattern = '/(https?:\/\/[^\s\,\;\"\'\<\>\(\)\[\]]+)/i';
+                    $replacement = '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:var(--primary,#1e3a6e);text-decoration:underline;word-break:break-all;">$1</a>';
+                    return preg_replace($pattern, $replacement, $text);
+                }
+                // Tampilkan paragraf dengan format rapi + link aktif
                 $paragraphs = explode("\n", str_replace(["\r\n", "\r"], "\n", $berita['isi']));
                 foreach ($paragraphs as $para) {
                     $para = trim($para);
                     if (!empty($para)) {
-                        echo '<p>' . nl2br(htmlspecialchars($para)) . '</p>';
+                        echo '<p>' . nl2br(auto_link_text($para)) . '</p>';
                     }
                 }
               ?>

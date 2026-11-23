@@ -1083,7 +1083,6 @@ $stmt_pop->close();
       if (p) {
         p.classList.remove('active');
         document.body.style.overflow = '';
-        localStorage.setItem('rutan_popup_last_time', Date.now().toString());
       }
     }
 
@@ -1095,24 +1094,11 @@ $stmt_pop->close();
       }
     });
 
-    // Otomatis muncul: hanya saat pertama kali buka web (sesi baru)
-    // ATAU jika sudah lebih dari 10 menit kemudian halaman di-refresh / dikunjungi lagi
+    // Otomatis muncul setiap kali web dibuka maupun di-refresh
     window.addEventListener('load', () => {
-      const TEN_MINUTES_MS = 10 * 60 * 1000; // 10 menit = 600.000 ms
-      const lastTime = parseInt(localStorage.getItem('rutan_popup_last_time') || '0', 10);
-      const sessionSeen = sessionStorage.getItem('rutan_popup_session_seen');
-      const now = Date.now();
-
-      const isNewSession = !sessionSeen; // Sesi tab baru (misal setelah keluar dari web)
-      const isTenMinutesPassed = (now - lastTime) >= TEN_MINUTES_MS; // Lebih dari 10 menit
-
-      if (isNewSession || isTenMinutesPassed) {
-        setTimeout(() => {
-          openPopupAds();
-          localStorage.setItem('rutan_popup_last_time', Date.now().toString());
-          sessionStorage.setItem('rutan_popup_session_seen', '1');
-        }, 400);
-      }
+      setTimeout(() => {
+        openPopupAds();
+      }, 400);
     });
   </script>
 </body>
