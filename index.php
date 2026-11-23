@@ -292,7 +292,7 @@ $stmt_pop->close();
           <div class="pejabat-ketua-avatar">
             <div class="avatar-ring"></div>
             <div class="avatar-inner">
-              <img src="foto pejabat/raymond andika girsang.png?v=2" alt="Raymond Andika Girsang"
+              <img src="Foto Pejabat/raymond andika girsang.png?v=<?= filemtime(__DIR__ . '/Foto Pejabat/raymond andika girsang.png') ?>" alt="Raymond Andika Girsang"
                 onclick="openLightbox(this.src, 'Raymon Andika Girsang, A.Md.IP., S.H., M.H. — Kepala Rutan')"
                 style="width:190px;height:190px;object-fit:cover;border-radius:50%;cursor:zoom-in;transition:transform .2s;"
                 onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
@@ -1083,6 +1083,7 @@ $stmt_pop->close();
       if (p) {
         p.classList.remove('active');
         document.body.style.overflow = '';
+        localStorage.setItem('rutan_popup_last_time', Date.now().toString());
       }
     }
 
@@ -1094,11 +1095,24 @@ $stmt_pop->close();
       }
     });
 
-    // Otomatis muncul saat web dibuka — selalu muncul kembali saat halaman di-refresh
+    // Otomatis muncul: hanya saat pertama kali buka web (sesi baru)
+    // ATAU jika sudah lebih dari 10 menit kemudian halaman di-refresh / dikunjungi lagi
     window.addEventListener('load', () => {
-      setTimeout(() => {
-        openPopupAds();
-      }, 400);
+      const TEN_MINUTES_MS = 10 * 60 * 1000; // 10 menit = 600.000 ms
+      const lastTime = parseInt(localStorage.getItem('rutan_popup_last_time') || '0', 10);
+      const sessionSeen = sessionStorage.getItem('rutan_popup_session_seen');
+      const now = Date.now();
+
+      const isNewSession = !sessionSeen; // Sesi tab baru (misal setelah keluar dari web)
+      const isTenMinutesPassed = (now - lastTime) >= TEN_MINUTES_MS; // Lebih dari 10 menit
+
+      if (isNewSession || isTenMinutesPassed) {
+        setTimeout(() => {
+          openPopupAds();
+          localStorage.setItem('rutan_popup_last_time', Date.now().toString());
+          sessionStorage.setItem('rutan_popup_session_seen', '1');
+        }, 400);
+      }
     });
   </script>
 </body>
