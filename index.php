@@ -231,9 +231,9 @@ $stmt_pop->close();
     <div class="vm-bg-pattern"></div>
     <div class="container">
       <div class="section-header light">
-        <span class="section-tag gold">Arah &amp; Tujuan</span>
-        <h2 class="section-title">Visi &amp; Misi</h2>
-        <p class="section-desc">Landasan dan arah gerak pelayanan Rutan Tanjung Kelas IIB</p>
+        <span class="section-tag gold">Arah &amp; Strategi</span>
+        <h2 class="section-title">Visi, Misi &amp; Tujuan</h2>
+        <p class="section-desc">Visi, Misi dan Tujuan Kementerian Imigrasi dan Pemasyarakatan RI</p>
       </div>
       <div class="vm-grid">
         <div class="vm-card visi-card">
@@ -243,11 +243,14 @@ $stmt_pop->close();
               <circle cx="12" cy="12" r="3" />
             </svg>
           </div>
-          <h3 class="vm-label">VISI</h3>
+          <div style="margin-bottom: 16px;">
+            <span class="vm-label" style="display: block; margin-bottom: 4px;">VISI 2025 - 2029</span>
+            <div style="color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;">
+              Kementerian Imigrasi dan Pemasyarakatan
+            </div>
+          </div>
           <p class="vm-text">
-            "Menjadi Rumah Tahanan Negara yang <strong>profesional, humanis, dan terpercaya</strong> dalam mewujudkan
-            sistem pemasyarakatan yang berkeadilan demi terciptanya ketertiban masyarakat dan tegaknya hukum di
-            Indonesia."
+            &ldquo;Terwujudnya Penegakan Hukum dan Pelayanan Keimigrasian dan Pemasyarakatan untuk Stabilitas Keamanan yang Tangguh menuju Indonesia Emas 2045&rdquo;.
           </p>
           <div class="vm-deco"></div>
         </div>
@@ -263,14 +266,37 @@ $stmt_pop->close();
               <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
             </svg>
           </div>
-          <h3 class="vm-label">MISI</h3>
+          <div style="margin-bottom: 16px;">
+            <span class="vm-label" style="display: block; margin-bottom: 4px;">MISI &amp; TUJUAN</span>
+            <div style="color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px;">
+              Kementerian Imigrasi dan Pemasyarakatan
+            </div>
+          </div>
           <ol class="misi-list">
-            <li>Melaksanakan perawatan tahanan berdasarkan nilai-nilai hak asasi manusia secara profesional dan
-              bertanggung jawab.</li>
-            <li>Mewujudkan keamanan dan ketertiban Rutan yang kondusif, aman, dan tertib.</li>
-            <li>Meningkatkan kualitas pelayanan publik yang transparan, cepat, dan akuntabel kepada masyarakat.</li>
-            <li>Membangun sumber daya manusia yang berintegritas, kompeten, dan berdedikasi tinggi.</li>
-            <li>Mendorong penerapan teknologi informasi dalam tata kelola pemerintahan yang bersih dan modern.</li>
+            <li>
+              <div style="flex: 1; min-width: 0;">
+                <div style="margin-bottom: 10px;">
+                  <span style="display: inline-block; font-size: 0.78rem; font-weight: 700; color: var(--gold-light); background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3); border-radius: 4px; padding: 2px 8px; margin-bottom: 6px; letter-spacing: 0.5px;">MISI 1</span>
+                  <div style="color: rgba(255,255,255,0.92); line-height: 1.6; font-size: 0.95rem;">Mewujudkan Penegakan Hukum dan pelayanan serta jaminan pelindungan Imigrasi dan Pemasyarakatan yang transparan dan berkeadilan.</div>
+                </div>
+                <div style="padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.12);">
+                  <span style="display: inline-block; font-size: 0.75rem; font-weight: 700; color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 2px 8px; margin-bottom: 6px; letter-spacing: 0.5px;">TUJUAN 1</span>
+                  <div style="color: rgba(255,255,255,0.8); line-height: 1.6; font-size: 0.9rem;">Menciptakan penegakan dan pelayanan hukum untuk mendukung kedaulatan negara serta reintegrasi sosial secara transparan dan berkeadilan.</div>
+                </div>
+              </div>
+            </li>
+            <li>
+              <div style="flex: 1; min-width: 0;">
+                <div style="margin-bottom: 10px;">
+                  <span style="display: inline-block; font-size: 0.78rem; font-weight: 700; color: var(--gold-light); background: rgba(201,168,76,0.15); border: 1px solid rgba(201,168,76,0.3); border-radius: 4px; padding: 2px 8px; margin-bottom: 6px; letter-spacing: 0.5px;">MISI 2</span>
+                  <div style="color: rgba(255,255,255,0.92); line-height: 1.6; font-size: 0.95rem;">Meningkatkan kapasitas kelembagaan Imigrasi dan Pemasyarakatan yang modern, profesional, dan berintegritas.</div>
+                </div>
+                <div style="padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.12);">
+                  <span style="display: inline-block; font-size: 0.75rem; font-weight: 700; color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 2px 8px; margin-bottom: 6px; letter-spacing: 0.5px;">TUJUAN 2</span>
+                  <div style="color: rgba(255,255,255,0.8); line-height: 1.6; font-size: 0.9rem;">Menciptakan sistem keimigrasian dan pemasyarakatan yang modern, terintegrasi dan akuntabel melalui peningkatan kompetensi dan profesionalisme sumber daya manusia yang berintegritas, responsif dan adaptif di bidang Imigrasi dan Pemasyarakatan.</div>
+                </div>
+              </div>
+            </li>
           </ol>
         </div>
       </div>
