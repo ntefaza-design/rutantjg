@@ -103,9 +103,10 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
       align-items: start;
     }
 
-    @media (max-width: 960px) {
+    @media (max-width: 1024px) {
       .article-layout {
         grid-template-columns: 1fr;
+        gap: 32px;
       }
     }
 
@@ -118,8 +119,13 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
     }
 
     @media (max-width: 600px) {
+      .article-page {
+        padding-top: 90px;
+        padding-bottom: 48px;
+      }
       .article-card-main {
-        padding: 22px 18px;
+        padding: 20px 16px;
+        border-radius: 14px;
       }
     }
 
@@ -138,7 +144,7 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
 
     .article-title {
       font-family: var(--font-body);
-      font-size: 2.1rem;
+      font-size: clamp(1.5rem, 3.8vw, 2.1rem);
       font-weight: 800;
       line-height: 1.35;
       color: var(--primary-dark);
@@ -147,7 +153,8 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
 
     @media (max-width: 600px) {
       .article-title {
-        font-size: 1.6rem;
+        font-size: 1.4rem;
+        line-height: 1.35;
       }
     }
 
@@ -197,10 +204,31 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
       font-size: 1.05rem;
       line-height: 1.85;
       color: #2d3748;
+      word-break: break-word;
     }
 
     .article-content p {
       margin-bottom: 20px;
+    }
+
+    .article-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--radius-md);
+      margin: 16px 0;
+    }
+
+    .article-content iframe {
+      max-width: 100%;
+      border-radius: var(--radius-sm);
+    }
+
+    .article-content table {
+      width: 100%;
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 16px 0;
     }
 
     .article-share-box {

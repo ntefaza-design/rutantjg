@@ -310,6 +310,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       color: var(--white);
       text-decoration: underline;
     }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 16px 12px;
+      }
+      .login-container {
+        padding: 28px 20px;
+        border-radius: 16px;
+      }
+      .login-logo {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 12px;
+      }
+      .login-title {
+        font-size: 1.3rem;
+      }
+      .form-control {
+        font-size: 16px;
+        padding: 12px 14px 12px 42px;
+      }
+      .btn-login {
+        min-height: 48px;
+      }
+    }
   </style>
 </head>
 <body>

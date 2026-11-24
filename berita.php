@@ -334,14 +334,22 @@ $per_page = ($halaman === 1) ? 7 : $grid_per_page;
 
     @media (max-width: 1024px) {
       .berita-featured { grid-template-columns: 1fr; }
-      .featured-img-wrap { min-height: 280px; }
-      .berita-cards-grid { grid-template-columns: repeat(2, 1fr); }
+      .featured-img-wrap { min-height: 260px; }
+      .berita-cards-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
     }
 
-    @media (max-width: 680px) {
-      .berita-cards-grid { grid-template-columns: 1fr; }
-      .featured-body { padding: 24px 20px; }
+    @media (max-width: 768px) {
+      .berita-page-hero { padding: 100px 0 50px; }
+      .berita-filter-section { padding: 14px 0; top: 75px; }
+      .filter-container { flex-direction: column; align-items: stretch; gap: 10px; }
+      .search-berita-wrap { max-width: 100%; width: 100%; }
+      .search-berita-wrap input { font-size: 16px; }
+      .total-berita-info { text-align: center; }
+      .berita-halaman-section { padding: 36px 0 56px; }
+      .berita-cards-grid { grid-template-columns: 1fr; gap: 20px; }
+      .featured-body { padding: 22px 18px; }
       .featured-title { font-size: 1.35rem; }
+      .featured-img-wrap { min-height: 200px; max-height: 260px; }
     }
 
     /* Card reguler — desain bersih ala portal berita */

@@ -1529,6 +1529,267 @@ $stmt_cp_val->close();
     .btn-status-toggle.inactive:hover {
       background: rgba(229, 62, 62, 0.18);
     }
+
+    /* ==============================================
+       ADMIN RESPONSIVE STYLES
+       Desktop (> 1024px), Tablet (768px – 1024px), Mobile (< 768px)
+       ============================================== */
+
+    /* 1. TABLET (768px – 1024px) */
+    @media (max-width: 1024px) {
+      .admin-navbar {
+        padding: 12px 20px;
+      }
+      .admin-main {
+        padding: 0 16px;
+        margin: 20px auto;
+      }
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+        margin-bottom: 22px;
+      }
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .content-box-header {
+        padding: 16px 20px;
+      }
+      .filter-bar {
+        padding: 14px 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .table-news th, .table-news td {
+        padding: 12px 14px;
+      }
+      .admin-tabs-nav {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+
+    /* 2. MOBILE / HP (< 768px) */
+    @media (max-width: 768px) {
+      .admin-navbar {
+        padding: 12px 14px;
+      }
+      .admin-nav-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .admin-brand {
+        justify-content: flex-start;
+      }
+      .admin-brand img {
+        width: 38px;
+        height: 38px;
+      }
+      .admin-brand-text h1 {
+        font-size: 1rem;
+      }
+      .admin-brand-text span {
+        font-size: 0.72rem;
+      }
+      .admin-nav-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 10px;
+      }
+      .user-pill {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+      }
+      .btn-view-site, .btn-logout {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      /* Horizontal Scrollable Tabs */
+      .admin-tabs-nav {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px;
+        padding-bottom: 4px;
+        margin-bottom: 18px;
+        border-bottom: 2px solid var(--gray-200);
+        scrollbar-width: none;
+      }
+      .admin-tabs-nav::-webkit-scrollbar {
+        display: none;
+      }
+      .admin-tab-item {
+        padding: 10px 16px;
+        font-size: 0.86rem;
+        flex-shrink: 0;
+      }
+
+      /* Stats */
+      .stats-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .stat-card {
+        padding: 14px 16px;
+        gap: 14px;
+      }
+      .stat-icon {
+        width: 44px;
+        height: 44px;
+      }
+      .stat-icon svg {
+        width: 22px;
+        height: 22px;
+      }
+      .stat-info .stat-value {
+        font-size: 1.35rem;
+      }
+
+      /* Main container & content box */
+      .admin-main {
+        padding: 0 10px;
+        margin: 14px auto;
+      }
+      .content-box {
+        border-radius: var(--radius-md);
+      }
+      .content-box-header {
+        padding: 14px 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        text-align: left;
+      }
+      .content-box-title {
+        font-size: 1.1rem;
+      }
+      .content-box-header .btn-primary,
+      .content-box-header .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        min-height: 44px;
+      }
+
+      /* Filter bar */
+      .filter-bar {
+        padding: 12px 16px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .search-box {
+        max-width: 100%;
+        width: 100%;
+      }
+      .search-box input {
+        font-size: 16px;
+        min-height: 44px;
+      }
+
+      /* Tables: scrollable horizontally with clear min-width */
+      .table-responsive {
+        border-radius: 0 0 12px 12px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        display: block;
+        width: 100%;
+      }
+      .table-news {
+        min-width: 650px;
+        font-size: 0.86rem;
+      }
+      .table-news th {
+        padding: 10px 12px;
+        font-size: 0.72rem;
+      }
+      .table-news td {
+        padding: 12px 12px;
+      }
+      .news-thumbnail {
+        width: 58px;
+        height: 42px;
+      }
+      .action-buttons {
+        gap: 6px;
+        flex-wrap: nowrap;
+      }
+      .btn-action-edit, .btn-action-delete {
+        padding: 8px 10px;
+        font-size: 0.78rem;
+        min-height: 36px;
+      }
+
+      /* Form */
+      .form-container, .news-form {
+        padding: 18px 14px !important;
+      }
+      .form-input, .form-textarea, select.form-control, input.form-control {
+        font-size: 16px !important;
+        min-height: 44px;
+        padding: 10px 14px;
+      }
+      .form-actions-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .form-actions-bar .btn-primary,
+      .form-actions-bar .btn-secondary {
+        width: 100%;
+        justify-content: center;
+        min-height: 46px;
+      }
+
+      /* Pop-up previews in Admin */
+      .popup-preview-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+        padding: 14px;
+      }
+      .popup-preview-img-wrap {
+        height: 120px;
+      }
+
+      /* Lightbox in Admin */
+      .admin-modal-img {
+        max-width: 95vw;
+        max-height: 80vh;
+      }
+    }
+
+    /* 3. SMALL MOBILE (< 480px) */
+    @media (max-width: 480px) {
+      .admin-brand-text h1 {
+        font-size: 0.92rem;
+      }
+      .user-pill {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+      }
+      .btn-view-site, .btn-logout {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+      }
+      .stat-card {
+        padding: 12px 14px;
+      }
+      .form-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
   </style>
 </head>
 <body>

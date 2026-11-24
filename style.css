@@ -53,6 +53,8 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 body {
@@ -62,9 +64,18 @@ body {
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  width: 100%;
+  position: relative;
 }
 
-img, svg { display: block; }
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+svg { display: block; }
+iframe { max-width: 100%; }
 a { text-decoration: none; color: inherit; }
 ul, ol { list-style: none; }
 button { cursor: pointer; font-family: inherit; border: none; background: none; }
@@ -72,6 +83,7 @@ input, textarea, select { font-family: inherit; }
 
 .container {
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -183,14 +195,28 @@ input, textarea, select { font-family: inherit; }
 .hamburger {
   display: none;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
   gap: 5px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 8px;
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  z-index: 1001;
 }
+
+.hamburger:hover, .hamburger:focus-visible {
+  background: rgba(201, 168, 76, 0.18);
+  border-color: var(--gold);
+}
+
 .hamburger span {
   display: block;
-  width: 24px;
+  width: 22px;
   height: 2px;
   background: var(--gold);
   border-radius: 2px;
@@ -2751,39 +2777,37 @@ input, textarea, select { font-family: inherit; }
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 1024px) {
-  .about-grid { grid-template-columns: 1fr; }
-  .about-visual { margin-bottom: 0; }
-  .vm-grid { grid-template-columns: 1fr; }
-  .vm-divider { flex-direction: row; padding: 8px 0; }
-  .vm-divider-line { flex: 1; height: 1px; width: auto; }
-  .footer-top-inner { grid-template-columns: 1fr 1fr; }
-  .kontak-grid { grid-template-columns: 1fr; }
-  .map-wrap { position: static; }
-  /* Sorotan: 2 kolom di tablet */
-  .sorotan-grid { grid-template-columns: repeat(2, 1fr); gap: 28px 24px; }
-}
 
-@media (max-width: 768px) {
-  .section { padding: 72px 0; }
-  .navbar .container { padding: 0 20px; }
-  /* Sorotan: 1 kolom di HP */
-  .sorotan-grid { grid-template-columns: 1fr; gap: 24px; }
-  .sorotan-title { font-size: 1.45rem; }
+/* 1. TABLET (768px – 1024px) */
+@media (max-width: 1024px) {
+  .section { padding: 76px 0; }
+  .container { padding: 0 20px; }
+
+  /* Navbar: Switch to Hamburger & Drawer on Tablet */
+  .hamburger { display: flex; }
+
+  .navbar .container {
+    padding: 0 20px;
+  }
 
   .nav-links {
     position: fixed;
     top: 80px; left: 0; right: 0;
-    background: rgba(6,21,64,0.98);
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: rgba(6, 21, 64, 0.98);
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     flex-direction: column;
-    padding: 24px;
+    padding: 24px 20px 32px;
     gap: 8px;
-    transform: translateY(-100%);
+    transform: translateY(-110%);
     opacity: 0;
     pointer-events: none;
-    transition: var(--transition);
-    border-bottom: 1px solid rgba(201,168,76,0.2);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    border-bottom: 2px solid rgba(201, 168, 76, 0.3);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     z-index: 999;
   }
 
@@ -2793,55 +2817,139 @@ input, textarea, select { font-family: inherit; }
     pointer-events: all;
   }
 
-  .nav-link { text-align: center; padding: 12px; font-size: 15px; }
-  .btn-nav-cta { text-align: center; margin-left: 0; justify-content: center; }
-  .hamburger { display: flex; }
+  .nav-link {
+    width: 100%;
+    text-align: center;
+    padding: 12px 16px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: background 0.2s, color 0.2s;
+  }
 
-  .hero-stats { gap: 20px; }
+  .nav-link:hover, .nav-link.active {
+    background: rgba(201, 168, 76, 0.14);
+    color: var(--gold-light);
+  }
+
+  .btn-nav-cta {
+    width: 100%;
+    text-align: center;
+    margin-left: 0;
+    justify-content: center;
+    min-height: 44px;
+  }
+
+  .btn-nav-berita-cta {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 8px;
+    justify-content: center;
+    padding: 10px 16px;
+  }
+
+  /* Grid Layouts: Adaptif di Tablet */
+  .about-grid { grid-template-columns: 1fr; gap: 40px; }
+  .about-visual { margin-bottom: 0; }
+  .vm-grid { grid-template-columns: 1fr; }
+  .vm-divider { flex-direction: row; padding: 8px 0; }
+  .vm-divider-line { flex: 1; height: 1px; width: auto; }
+  .sorotan-grid { grid-template-columns: repeat(2, 1fr); gap: 28px 24px; }
+  .pejabat-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .jadwal-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .sosmed-channels-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .ig-highlight-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .footer-top-inner { grid-template-columns: 1fr 1fr; gap: 40px; }
+  .kontak-grid { grid-template-columns: 1fr; gap: 36px; }
+  .map-wrap { position: static; }
+}
+
+/* 2. MOBILE / HP (< 768px) */
+@media (max-width: 768px) {
+  .section { padding: 56px 0; }
+  .navbar .container { padding: 0 16px; }
+
+  /* Hero adjustments */
+  .hero-content { padding: 105px 16px 50px; }
+  .hero-title { font-size: clamp(2rem, 5.5vw, 2.7rem); }
+  .hero-desc { font-size: 1rem; margin-bottom: 30px; }
+  .hero-stats { gap: 16px; flex-wrap: wrap; justify-content: center; }
   .stat-divider { display: none; }
+  .stat-item { min-width: 100px; }
+
+  /* Section Title & Tag */
+  .section-title { font-size: clamp(1.5rem, 4.2vw, 2.2rem); }
+  .section-desc { font-size: 0.95rem; }
+
+  /* Grid Layouts: 1 Kolom Adaptif di HP */
+  .sorotan-grid { grid-template-columns: 1fr; gap: 24px; }
+  .sorotan-title { font-size: 1.45rem; }
+  .pejabat-grid { grid-template-columns: 1fr; gap: 20px; }
+  .jadwal-grid { grid-template-columns: 1fr; gap: 20px; }
+  .ig-highlight-grid { grid-template-columns: 1fr; gap: 20px; }
+  .sosmed-channels-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
 
   .pejabat-ketua-card {
     flex-direction: column;
     text-align: center;
-    padding: 36px 28px;
-    gap: 28px;
+    padding: 32px 20px;
+    gap: 24px;
   }
-
   .pejabat-contact { justify-content: center; }
 
-  .pejabat-grid { grid-template-columns: 1fr; }
-
-  .jadwal-grid { grid-template-columns: 1fr; }
-
   /* Sosial Media / Highlight responsive */
-  .sosmed-banner-card { flex-direction: column; align-items: flex-start; padding: 24px 20px; gap: 20px; }
-  .sosmed-banner-left { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .sosmed-banner-card { flex-direction: column; align-items: flex-start; padding: 22px 18px; gap: 18px; }
+  .sosmed-banner-left { flex-direction: column; align-items: flex-start; gap: 14px; }
   .sosmed-banner-actions { width: 100%; }
-  .btn-ig-follow-main { width: 100%; justify-content: center; }
-  .btn-channel-banner { width: 100%; justify-content: center; }
-  .ig-highlight-grid { grid-template-columns: 1fr; }
-  .sosmed-channels-grid { grid-template-columns: repeat(2, 1fr); }
+  .btn-ig-follow-main { width: 100%; justify-content: center; min-height: 44px; }
+  .btn-channel-banner { width: 100%; justify-content: center; min-height: 44px; }
 
   /* WA Pengaduan responsive */
-  .wa-pengaduan-wrap { grid-template-columns: 1fr; gap: 36px; }
-  .wa-card { padding: 28px 24px; }
+  .wa-pengaduan-wrap { grid-template-columns: 1fr; gap: 30px; }
+  .wa-card { padding: 24px 18px; }
   .wa-info-cards { grid-template-columns: 1fr; }
   .wa-step-list { gap: 8px; }
 
-  .footer-top-inner { grid-template-columns: 1fr; gap: 36px; }
+  /* Footer */
+  .footer-top-inner { grid-template-columns: 1fr; gap: 32px; }
   .footer-brand { max-width: 100%; }
-  .footer-bottom-inner { flex-direction: column; text-align: center; }
+  .footer-bottom-inner { flex-direction: column; text-align: center; gap: 12px; }
+
+  /* Prevent auto zoom on iOS inputs */
+  input, select, textarea {
+    font-size: 16px;
+  }
 }
 
+/* 3. SMALL MOBILE (< 480px) */
 @media (max-width: 480px) {
-  .hero-title { font-size: 2rem; }
-  .hero-actions { flex-direction: column; align-items: center; }
-  .btn-primary, .btn-ghost { width: 100%; max-width: 300px; justify-content: center; }
-  .pejabat-ketua-card { padding: 28px 20px; }
-  .modal-box { padding: 36px 24px; }
+  .section { padding: 44px 0; }
+  .container { padding: 0 14px; }
+  .navbar .container { padding: 0 12px; }
+
+  .logo-emblem img { width: 44px; height: 44px; }
+  .logo-title { font-size: 0.95rem; }
+  .logo-sub { font-size: 0.68rem; }
+
+  .hero-content { padding: 95px 12px 40px; }
+  .hero-title { font-size: clamp(1.75rem, 6.8vw, 2.2rem); }
+  .hero-desc { font-size: 0.92rem; line-height: 1.6; }
+  .hero-actions { flex-direction: column; align-items: stretch; gap: 12px; margin-bottom: 30px; }
+  .btn-primary, .btn-ghost { width: 100%; max-width: 100%; justify-content: center; min-height: 48px; }
+
+  .pejabat-ketua-card { padding: 24px 16px; }
+  .modal-box { padding: 30px 18px; }
   .sosmed-channels-grid { grid-template-columns: 1fr; }
   .ig-post-topbar { flex-direction: column; align-items: flex-start; gap: 10px; }
-  .ig-post-content { padding: 18px 16px; }
+  .ig-post-content { padding: 18px 14px; }
+
+  /* Map container height */
+  .map-card { padding: 14px; }
+  .map-embed-container { height: 260px; }
 }
 
 /* ===== POPUP ADS ON LOAD ===== */
@@ -3038,20 +3146,58 @@ input, textarea, select { font-family: inherit; }
 }
 
 @media (max-width: 600px) {
+  .popup-ads-dialog {
+    max-width: 96vw;
+    padding: 8px;
+    border-radius: 14px;
+  }
   .popup-ads-close {
-    top: 8px;
-    right: 8px;
-    width: 34px;
-    height: 34px;
-    font-size: 16px;
+    top: -8px;
+    right: -8px;
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  .popup-ads-slides-wrap {
+    max-height: 62vh;
+  }
+  .popup-ads-img {
+    max-height: 62vh;
   }
   .popup-ads-arrow {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     font-size: 16px;
   }
-  .popup-ads-arrow.prev { left: 8px; }
-  .popup-ads-arrow.next { right: 8px; }
+  .popup-ads-arrow.prev { left: 6px; }
+  .popup-ads-arrow.next { right: 6px; }
+  .popup-ads-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 6px 2px;
+    justify-content: center;
+  }
+  .popup-ads-dots {
+    order: 2;
+    gap: 6px;
+  }
+  .popup-dot {
+    width: 8px;
+    height: 8px;
+  }
+  .popup-dot.active {
+    width: 18px;
+  }
+  .popup-ads-counter {
+    order: 1;
+    font-size: 12px;
+  }
+  .popup-ads-close-text {
+    order: 3;
+    width: 100%;
+    text-align: center;
+    margin-top: 4px;
+  }
 }
 
 /* ===== SERVICE STATUS BADGE (Realtime Buka/Tutup) ===== */
