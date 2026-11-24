@@ -85,13 +85,13 @@ CREATE TABLE IF NOT EXISTS `jadwal_pelayanan` (
 -- Data Awal `jadwal_pelayanan`
 -- --------------------------------------------------------
 INSERT INTO `jadwal_pelayanan` (`id`, `kategori`, `hari`, `waktu`, `keterangan`, `is_tutup`, `urutan`) VALUES
-(1, 'kunjungan', 'Senin � Kamis', '08.30 � 11.30 WITA', 'Sesi Pagi', 0, 1),
-(2, 'kunjungan', 'Jum\'at � Minggu & Libur', 'Tutup', 'Tidak ada kunjungan', 1, 2),
-(3, 'penitipan', 'Senin � Kamis', '08.30 � 11.30 WITA', 'Sesi Pagi', 0, 1),
-(4, 'penitipan', 'Senin � Kamis', '14.00 � 16.00 WITA', 'Sesi Siang', 0, 2),
-(5, 'penitipan', 'Jum\'at & Sabtu', '08.30 � 11.30 WITA', 'Sesi Pagi', 0, 3),
+(1, 'kunjungan', 'Senin - Kamis', '08.30 - 11.30 WITA', 'Sesi Pagi', 0, 1),
+(2, 'kunjungan', 'Jum\'at - Minggu & Libur', 'Tutup', 'Tidak ada kunjungan', 1, 2),
+(3, 'penitipan', 'Senin - Kamis', '08.30 - 11.30 WITA', 'Sesi Pagi', 0, 1),
+(4, 'penitipan', 'Senin - Kamis', '14.00 - 16.00 WITA', 'Sesi Siang', 0, 2),
+(5, 'penitipan', 'Jum\'at & Sabtu', '08.30 - 11.30 WITA', 'Sesi Pagi', 0, 3),
 (6, 'penitipan', 'Minggu & Hari Libur', 'Tutup', 'Tidak ada layanan', 1, 4)
-ON DUPLICATE KEY UPDATE `hari` = VALUES(`hari`);
+ON DUPLICATE KEY UPDATE `hari` = VALUES(`hari`), `waktu` = VALUES(`waktu`);
 
 -- --------------------------------------------------------
 -- 4. Struktur Tabel `pengaturan_jadwal`
