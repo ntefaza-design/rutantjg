@@ -24,6 +24,253 @@ if (!is_dir($upload_dir)) {
     mkdir($upload_dir, 0755, true);
 }
 
+/**
+ * Format ukuran file menjadi KB atau MB yang mudah dibaca.
+ */
+if (!function_exists('format_ukuran_file')) {
+    function format_ukuran_file($bytes) {
+        if ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 2) . ' MB';
+        }
+        return max(1, round($bytes / 1024)) . ' KB';
+    }
+}
+
+/**
+ * Membuat kanvas GD ter-resize proporsional dengan menjaga transparansi (PNG/WebP).
+ */
+if (!function_exists('buat_kanvas_gambar_proporsional')) {
+    function buat_kanvas_gambar_proporsional($src_img, $orig_w, $orig_h, $max_dim, $preserve_alpha = false) {
+        if ($orig_w > $max_dim || $orig_h > $max_dim) {
+            if ($orig_w >= $orig_h) {
+                $new_w = $max_dim;
+                $new_h = max(1, (int)round($orig_h * ($max_dim / $orig_w)));
+            } else {
+                $new_h = $max_dim;
+                $new_w = max(1, (int)round($orig_w * ($max_dim / $orig_h)));
+            }
+        } else {
+            $new_w = $orig_w;
+            $new_h = $orig_h;
+        }
+
+        $dst = imagecreatetruecolor($new_w, $new_h);
+        if ($preserve_alpha) {
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+            $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
+            imagefilledrectangle($dst, 0, 0, $new_w, $new_h, $transparent);
+        } else {
+            $white = imagecolorallocate($dst, 255, 255, 255);
+            imagefilledrectangle($dst, 0, 0, $new_w, $new_h, $white);
+        }
+        imagecopyresampled($dst, $src_img, 0, 0, 0, 0, $new_w, $new_h, $orig_w, $orig_h);
+        return $dst;
+    }
+}
+
+/**
+ * Validasi, upload, dan kompres otomatis gambar agar ukuran akhir selalu di bawah 1MB.
+ */
+if (!function_exists('proses_upload_dan_kompres_gambar')) {
+    function proses_upload_dan_kompres_gambar($file, $dest_dir, $prefix = 'img', $max_input_bytes = 20971520, $target_bytes = 980000) {
+        if (!isset($file) || !is_array($file)) {
+            return ['success' => false, 'error' => 'File gambar tidak ditemukan.'];
+        }
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            if ($file['error'] === UPLOAD_ERR_INI_SIZE || $file['error'] === UPLOAD_ERR_FORM_SIZE) {
+                return ['success' => false, 'error' => 'Ukuran file melebihi batas maksimal server.'];
+            }
+            return ['success' => false, 'error' => 'Terjadi kesalahan saat mengunggah file gambar.'];
+        }
+
+        $file_tmp  = $file['tmp_name'];
+        $file_name = $file['name'];
+        $file_size = (int)$file['size'];
+        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+        $allowed   = ['jpg', 'jpeg', 'png', 'webp'];
+
+        if (!in_array($file_ext, $allowed, true)) {
+            return ['success' => false, 'error' => 'Format gambar tidak valid! Gunakan format JPG, JPEG, PNG, atau WEBP.'];
+        }
+
+        if ($file_size > $max_input_bytes) {
+            $max_mb = round($max_input_bytes / (1024 * 1024));
+            return ['success' => false, 'error' => "Ukuran file input terlalu besar! Maksimal {$max_mb}MB."];
+        }
+
+        $img_info = @getimagesize($file_tmp);
+        if ($img_info === false) {
+            return ['success' => false, 'error' => 'File yang diunggah bukan gambar yang valid.'];
+        }
+
+        if (!is_dir($dest_dir)) {
+            mkdir($dest_dir, 0755, true);
+        }
+
+        $base_name = $prefix . '-' . time() . '-' . uniqid();
+
+        $needs_exif_rotate = false;
+        if (in_array($file_ext, ['jpg', 'jpeg'], true) && function_exists('exif_read_data')) {
+            $exif = @exif_read_data($file_tmp);
+            if (!empty($exif['Orientation']) && in_array((int)$exif['Orientation'], [3, 6, 8], true)) {
+                $needs_exif_rotate = true;
+            }
+        }
+
+        // Jika sudah di bawah 1MB dan tidak perlu koreksi orientasi EXIF, simpan langsung
+        if ($file_size <= $target_bytes && !$needs_exif_rotate) {
+            $final_name = $base_name . '.' . $file_ext;
+            $dest_path  = rtrim($dest_dir, '/\\') . DIRECTORY_SEPARATOR . $final_name;
+            $moved = is_uploaded_file($file_tmp) ? move_uploaded_file($file_tmp, $dest_path) : copy($file_tmp, $dest_path);
+            if (!$moved) {
+                return ['success' => false, 'error' => 'Gagal mengunggah file gambar ke server.'];
+            }
+            return [
+                'success'       => true,
+                'filename'      => $final_name,
+                'compressed'    => false,
+                'original_size' => $file_size,
+                'final_size'    => filesize($dest_path),
+            ];
+        }
+
+        if (!extension_loaded('gd')) {
+            return ['success' => false, 'error' => 'Ekstensi PHP GD belum aktif di server untuk kompresi gambar.'];
+        }
+
+        $mime = $img_info['mime'] ?? '';
+        $src_img = null;
+        if ($mime === 'image/jpeg') {
+            $src_img = @imagecreatefromjpeg($file_tmp);
+        } elseif ($mime === 'image/png') {
+            $src_img = @imagecreatefrompng($file_tmp);
+        } elseif ($mime === 'image/webp' && function_exists('imagecreatefromwebp')) {
+            $src_img = @imagecreatefromwebp($file_tmp);
+        }
+
+        if (!$src_img) {
+            return ['success' => false, 'error' => 'Gagal membaca gambar untuk dikompres.'];
+        }
+
+        if ($mime === 'image/jpeg' && $needs_exif_rotate) {
+            $exif = @exif_read_data($file_tmp);
+            if (!empty($exif['Orientation'])) {
+                switch ((int)$exif['Orientation']) {
+                    case 3: $src_img = imagerotate($src_img, 180, 0); break;
+                    case 6: $src_img = imagerotate($src_img, -90, 0); break;
+                    case 8: $src_img = imagerotate($src_img, 90, 0); break;
+                }
+            }
+        }
+
+        $orig_w     = imagesx($src_img);
+        $orig_h     = imagesy($src_img);
+        $save_ok    = false;
+        $final_name = '';
+        $dest_path  = '';
+
+        if ($mime === 'image/png') {
+            // Tahap 1: Kompres PNG sambil pertahankan alpha transparency
+            foreach ([1600, 1280, 1024] as $max_dim) {
+                $canvas   = buat_kanvas_gambar_proporsional($src_img, $orig_w, $orig_h, $max_dim, true);
+                $try_name = $base_name . '.png';
+                $try_path = rtrim($dest_dir, '/\\') . DIRECTORY_SEPARATOR . $try_name;
+                imagepng($canvas, $try_path, 9);
+                imagedestroy($canvas);
+                if (file_exists($try_path) && filesize($try_path) <= $target_bytes) {
+                    $save_ok    = true;
+                    $final_name = $try_name;
+                    $dest_path  = $try_path;
+                    break;
+                }
+                if (file_exists($try_path)) @unlink($try_path);
+            }
+
+            // Tahap 2: Jika PNG resolusi besar masih > 1MB, konversi ke WebP (transparansi tetap terjaga)
+            if (!$save_ok && function_exists('imagewebp')) {
+                foreach ([1600, 1280, 960, 720] as $max_dim) {
+                    $canvas = buat_kanvas_gambar_proporsional($src_img, $orig_w, $orig_h, $max_dim, true);
+                    foreach ([85, 75, 65, 55, 45] as $q) {
+                        $try_name = $base_name . '.webp';
+                        $try_path = rtrim($dest_dir, '/\\') . DIRECTORY_SEPARATOR . $try_name;
+                        imagewebp($canvas, $try_path, $q);
+                        if (file_exists($try_path) && filesize($try_path) <= $target_bytes) {
+                            $save_ok    = true;
+                            $final_name = $try_name;
+                            $dest_path  = $try_path;
+                            imagedestroy($canvas);
+                            break 2;
+                        }
+                        if (file_exists($try_path)) @unlink($try_path);
+                    }
+                    imagedestroy($canvas);
+                }
+            }
+
+            // Tahap 3 fallback jika tidak ada WebP
+            if (!$save_ok) {
+                foreach ([800, 640, 480] as $max_dim) {
+                    $canvas   = buat_kanvas_gambar_proporsional($src_img, $orig_w, $orig_h, $max_dim, true);
+                    $try_name = $base_name . '.png';
+                    $try_path = rtrim($dest_dir, '/\\') . DIRECTORY_SEPARATOR . $try_name;
+                    imagepng($canvas, $try_path, 9);
+                    imagedestroy($canvas);
+                    if (file_exists($try_path) && (filesize($try_path) <= $target_bytes || $max_dim === 480)) {
+                        $save_ok    = true;
+                        $final_name = $try_name;
+                        $dest_path  = $try_path;
+                        break;
+                    }
+                    if (file_exists($try_path)) @unlink($try_path);
+                }
+            }
+        } else {
+            // JPG / JPEG / WebP: resize proporsional + turunkan kualitas bertahap hingga < 1MB
+            $is_webp = ($mime === 'image/webp' && function_exists('imagewebp'));
+            $out_ext = $is_webp ? 'webp' : 'jpg';
+            $dims    = [1920, 1440, 1080, 800, 600];
+            $quals   = [85, 76, 68, 58, 48, 38];
+
+            foreach ($dims as $max_dim) {
+                $canvas = buat_kanvas_gambar_proporsional($src_img, $orig_w, $orig_h, $max_dim, $is_webp);
+                foreach ($quals as $q) {
+                    $try_name = $base_name . '.' . $out_ext;
+                    $try_path = rtrim($dest_dir, '/\\') . DIRECTORY_SEPARATOR . $try_name;
+                    if ($is_webp) {
+                        imagewebp($canvas, $try_path, $q);
+                    } else {
+                        imagejpeg($canvas, $try_path, $q);
+                    }
+                    if (file_exists($try_path) && (filesize($try_path) <= $target_bytes || ($max_dim === 600 && $q === 38))) {
+                        $save_ok    = true;
+                        $final_name = $try_name;
+                        $dest_path  = $try_path;
+                        imagedestroy($canvas);
+                        break 2;
+                    }
+                    if (file_exists($try_path)) @unlink($try_path);
+                }
+                imagedestroy($canvas);
+            }
+        }
+
+        imagedestroy($src_img);
+
+        if (!$save_ok || empty($dest_path) || !file_exists($dest_path)) {
+            return ['success' => false, 'error' => 'Gagal mengompres dan menyimpan file gambar ke server.'];
+        }
+
+        return [
+            'success'       => true,
+            'filename'      => $final_name,
+            'compressed'    => ($file_size > $target_bytes),
+            'original_size' => $file_size,
+            'final_size'    => filesize($dest_path),
+        ];
+    }
+}
+
 // Inisialisasi variabel pesan notifikasi
 $pesan_sukses = $_SESSION['flash_sukses'] ?? '';
 $pesan_error  = $_SESSION['flash_error'] ?? '';
@@ -65,34 +312,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah'])) {
         $counter++;
     }
 
-    // Proses upload gambar
+    // Proses upload gambar (otomatis kompres < 1MB)
     $nama_file_gambar = null;
-    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
-        $file_tmp  = $_FILES['gambar']['tmp_name'];
-        $file_name = $_FILES['gambar']['name'];
-        $file_size = $_FILES['gambar']['size'];
-        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-        $allowed_ext = ['jpg', 'jpeg', 'png', 'webp'];
-        if (!in_array($file_ext, $allowed_ext)) {
-            $_SESSION['flash_error'] = 'Format gambar tidak valid! Gunakan format JPG, JPEG, PNG, atau WEBP.';
+    $info_kompresi = '';
+    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $res_upload = proses_upload_dan_kompres_gambar($_FILES['gambar'], $upload_dir, 'berita');
+        if (!$res_upload['success']) {
+            $_SESSION['flash_error'] = $res_upload['error'];
             header("Location: index.php?action=tambah");
             exit;
         }
-
-        if ($file_size > 5 * 1024 * 1024) { // Max 5MB
-            $_SESSION['flash_error'] = 'Ukuran gambar terlalu besar! Maksimal 5MB.';
-            header("Location: index.php?action=tambah");
-            exit;
-        }
-
-        $nama_file_gambar = 'berita-' . time() . '-' . uniqid() . '.' . $file_ext;
-        $tujuan_upload    = $upload_dir . $nama_file_gambar;
-
-        if (!move_uploaded_file($file_tmp, $tujuan_upload)) {
-            $_SESSION['flash_error'] = 'Gagal mengunggah file gambar ke server.';
-            header("Location: index.php?action=tambah");
-            exit;
+        $nama_file_gambar = $res_upload['filename'];
+        if (!empty($res_upload['compressed'])) {
+            $info_kompresi = ' (Foto otomatis dikompres dari ' . format_ukuran_file($res_upload['original_size']) . ' menjadi ' . format_ukuran_file($res_upload['final_size']) . ')';
         }
     }
 
@@ -101,7 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah'])) {
     $stmt->bind_param("sssss", $judul, $slug, $isi, $nama_file_gambar, $penulis);
 
     if ($stmt->execute()) {
-        $_SESSION['flash_sukses'] = 'Berita baru berhasil ditambahkan!';
+        $_SESSION['flash_sukses'] = 'Berita baru berhasil ditambahkan!' . $info_kompresi;
         header("Location: index.php");
         exit;
     } else {
@@ -161,36 +393,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit'])) {
     }
 
     $nama_file_gambar = $old_data['gambar'];
+    $info_kompresi = '';
 
-    // Cek apakah ada upload gambar baru
-    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] === UPLOAD_ERR_OK) {
-        $file_tmp  = $_FILES['gambar']['tmp_name'];
-        $file_name = $_FILES['gambar']['name'];
-        $file_size = $_FILES['gambar']['size'];
-        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-        $allowed_ext = ['jpg', 'jpeg', 'png', 'webp'];
-        if (!in_array($file_ext, $allowed_ext)) {
-            $_SESSION['flash_error'] = 'Format gambar tidak valid! Gunakan format JPG, JPEG, PNG, atau WEBP.';
+    // Cek apakah ada upload gambar baru (otomatis kompres < 1MB)
+    if (isset($_FILES['gambar']) && $_FILES['gambar']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $res_upload = proses_upload_dan_kompres_gambar($_FILES['gambar'], $upload_dir, 'berita');
+        if (!$res_upload['success']) {
+            $_SESSION['flash_error'] = $res_upload['error'];
             header("Location: index.php?action=edit&id=" . $id);
             exit;
         }
-
-        if ($file_size > 5 * 1024 * 1024) {
-            $_SESSION['flash_error'] = 'Ukuran gambar terlalu besar! Maksimal 5MB.';
-            header("Location: index.php?action=edit&id=" . $id);
-            exit;
+        // Hapus file gambar lama jika ada dan file fisiknya ada di folder uploads/berita
+        if (!empty($nama_file_gambar) && file_exists($upload_dir . $nama_file_gambar)) {
+            @unlink($upload_dir . $nama_file_gambar);
         }
-
-        $nama_file_baru = 'berita-' . time() . '-' . uniqid() . '.' . $file_ext;
-        $tujuan_upload   = $upload_dir . $nama_file_baru;
-
-        if (move_uploaded_file($file_tmp, $tujuan_upload)) {
-            // Hapus file gambar lama jika ada dan file fisiknya ada di folder uploads/berita
-            if (!empty($nama_file_gambar) && file_exists($upload_dir . $nama_file_gambar)) {
-                @unlink($upload_dir . $nama_file_gambar);
-            }
-            $nama_file_gambar = $nama_file_baru;
+        $nama_file_gambar = $res_upload['filename'];
+        if (!empty($res_upload['compressed'])) {
+            $info_kompresi = ' (Foto otomatis dikompres dari ' . format_ukuran_file($res_upload['original_size']) . ' menjadi ' . format_ukuran_file($res_upload['final_size']) . ')';
         }
     }
 
@@ -199,7 +418,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit'])) {
     $stmt->bind_param("sssssi", $judul, $slug, $isi, $nama_file_gambar, $penulis, $id);
 
     if ($stmt->execute()) {
-        $_SESSION['flash_sukses'] = 'Berita berhasil diperbarui!';
+        $_SESSION['flash_sukses'] = 'Berita berhasil diperbarui!' . $info_kompresi;
         header("Location: index.php");
         exit;
     } else {
@@ -346,30 +565,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah_pejabat
     }
 
     $foto_path = '';
-    if (isset($_FILES['pejabat_foto']) && $_FILES['pejabat_foto']['error'] === UPLOAD_ERR_OK) {
-        $file_tmp  = $_FILES['pejabat_foto']['tmp_name'];
-        $file_name = $_FILES['pejabat_foto']['name'];
-        $file_size = $_FILES['pejabat_foto']['size'];
-        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-        if (!in_array($file_ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-            $_SESSION['flash_error'] = 'Format foto tidak valid! Gunakan JPG, PNG, atau WEBP.';
+    $info_kompresi = '';
+    if (isset($_FILES['pejabat_foto']) && $_FILES['pejabat_foto']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $res_upload = proses_upload_dan_kompres_gambar($_FILES['pejabat_foto'], $pejabat_upload_dir, 'pejabat');
+        if (!$res_upload['success']) {
+            $_SESSION['flash_error'] = $res_upload['error'];
             header("Location: index.php?tab=pejabat");
             exit;
         }
-        if ($file_size > 5 * 1024 * 1024) {
-            $_SESSION['flash_error'] = 'Ukuran foto terlalu besar! Maksimal 5MB.';
-            header("Location: index.php?tab=pejabat");
-            exit;
+        $foto_path = 'uploads/pejabat/' . $res_upload['filename'];
+        if (!empty($res_upload['compressed'])) {
+            $info_kompresi = ' (Foto otomatis dikompres dari ' . format_ukuran_file($res_upload['original_size']) . ' menjadi ' . format_ukuran_file($res_upload['final_size']) . ')';
         }
-        $nama_file = 'pejabat-' . time() . '-' . uniqid() . '.' . $file_ext;
-        $tujuan    = $pejabat_upload_dir . $nama_file;
-        if (!move_uploaded_file($file_tmp, $tujuan)) {
-            $_SESSION['flash_error'] = 'Gagal mengunggah foto pejabat ke server.';
-            header("Location: index.php?tab=pejabat");
-            exit;
-        }
-        $foto_path = 'uploads/pejabat/' . $nama_file;
     }
 
     // Geser urutan di kategori yang sama
@@ -383,7 +590,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah_pejabat
     if ($stmt_ins->execute()) {
         $stmt_ins->close();
         normalisasi_urutan_pejabat($conn);
-        $_SESSION['flash_sukses'] = 'Data pejabat struktural baru berhasil ditambahkan!';
+        $_SESSION['flash_sukses'] = 'Data pejabat struktural baru berhasil ditambahkan!' . $info_kompresi;
     } else {
         $stmt_ins->close();
         $_SESSION['flash_error'] = 'Gagal menambahkan data pejabat: ' . $conn->error;
@@ -423,31 +630,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit_pejabat']
     $foto_path     = $old_pj['foto'] ?? '';
     $old_urutan    = (int)$old_pj['urutan'];
     $old_is_kepala = (int)$old_pj['is_kepala'];
+    $info_kompresi = '';
 
-    if (isset($_FILES['pejabat_foto']) && $_FILES['pejabat_foto']['error'] === UPLOAD_ERR_OK) {
-        $file_tmp  = $_FILES['pejabat_foto']['tmp_name'];
-        $file_name = $_FILES['pejabat_foto']['name'];
-        $file_size = $_FILES['pejabat_foto']['size'];
-        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-
-        if (!in_array($file_ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-            $_SESSION['flash_error'] = 'Format foto tidak valid! Gunakan JPG, PNG, atau WEBP.';
+    if (isset($_FILES['pejabat_foto']) && $_FILES['pejabat_foto']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $res_upload = proses_upload_dan_kompres_gambar($_FILES['pejabat_foto'], $pejabat_upload_dir, 'pejabat');
+        if (!$res_upload['success']) {
+            $_SESSION['flash_error'] = $res_upload['error'];
             header("Location: index.php?tab=pejabat&edit_pejabat=" . $pj_id);
             exit;
         }
-        if ($file_size > 5 * 1024 * 1024) {
-            $_SESSION['flash_error'] = 'Ukuran foto terlalu besar! Maksimal 5MB.';
-            header("Location: index.php?tab=pejabat&edit_pejabat=" . $pj_id);
-            exit;
+        if (!empty($foto_path) && str_starts_with($foto_path, 'uploads/pejabat/')) {
+            $old_file = __DIR__ . '/../' . $foto_path;
+            if (file_exists($old_file)) @unlink($old_file);
         }
-        $nama_file = 'pejabat-' . time() . '-' . uniqid() . '.' . $file_ext;
-        $tujuan    = $pejabat_upload_dir . $nama_file;
-        if (move_uploaded_file($file_tmp, $tujuan)) {
-            if (!empty($foto_path) && str_starts_with($foto_path, 'uploads/pejabat/')) {
-                $old_file = __DIR__ . '/../' . $foto_path;
-                if (file_exists($old_file)) @unlink($old_file);
-            }
-            $foto_path = 'uploads/pejabat/' . $nama_file;
+        $foto_path = 'uploads/pejabat/' . $res_upload['filename'];
+        if (!empty($res_upload['compressed'])) {
+            $info_kompresi = ' (Foto otomatis dikompres dari ' . format_ukuran_file($res_upload['original_size']) . ' menjadi ' . format_ukuran_file($res_upload['final_size']) . ')';
         }
     }
 
@@ -476,7 +674,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit_pejabat']
     if ($stmt_upd->execute()) {
         $stmt_upd->close();
         normalisasi_urutan_pejabat($conn);
-        $_SESSION['flash_sukses'] = 'Data pejabat struktural berhasil diperbarui!';
+        $_SESSION['flash_sukses'] = 'Data pejabat struktural berhasil diperbarui!' . $info_kompresi;
     } else {
         $stmt_upd->close();
         $_SESSION['flash_error'] = 'Gagal memperbarui data pejabat: ' . $conn->error;
@@ -573,33 +771,24 @@ if (!function_exists('normalisasi_urutan_popup')) {
 
 // Tambah gambar popup baru
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah_popup'])) {
-    if (!isset($_FILES['popup_gambar']) || $_FILES['popup_gambar']['error'] !== UPLOAD_ERR_OK) {
+    if (!isset($_FILES['popup_gambar']) || $_FILES['popup_gambar']['error'] === UPLOAD_ERR_NO_FILE) {
         $_SESSION['flash_error'] = 'File gambar wajib diunggah!';
         header("Location: index.php?tab=popup"); exit;
     }
-    $file_tmp  = $_FILES['popup_gambar']['tmp_name'];
-    $file_name = $_FILES['popup_gambar']['name'];
-    $file_size = $_FILES['popup_gambar']['size'];
-    $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-    if (!in_array($file_ext, ['jpg','jpeg','png','webp'])) {
-        $_SESSION['flash_error'] = 'Format tidak valid! Gunakan JPG, PNG, atau WEBP.';
+    $res_upload = proses_upload_dan_kompres_gambar($_FILES['popup_gambar'], $popup_upload_dir, 'popup');
+    if (!$res_upload['success']) {
+        $_SESSION['flash_error'] = $res_upload['error'];
         header("Location: index.php?tab=popup"); exit;
     }
-    if ($file_size > 5 * 1024 * 1024) {
-        $_SESSION['flash_error'] = 'Ukuran file terlalu besar! Maksimal 5MB.';
-        header("Location: index.php?tab=popup"); exit;
-    }
-    $nama_file  = 'popup-' . time() . '-' . uniqid() . '.' . $file_ext;
-    $tujuan     = $popup_upload_dir . $nama_file;
-    if (!move_uploaded_file($file_tmp, $tujuan)) {
-        $_SESSION['flash_error'] = 'Gagal mengunggah file ke server.';
-        header("Location: index.php?tab=popup"); exit;
-    }
+    $tujuan        = $popup_upload_dir . $res_upload['filename'];
+    $info_kompresi = !empty($res_upload['compressed'])
+        ? ' (Gambar otomatis dikompres dari ' . format_ukuran_file($res_upload['original_size']) . ' menjadi ' . format_ukuran_file($res_upload['final_size']) . ')'
+        : '';
     $link_url    = trim($_POST['popup_link_url'] ?? '');
     $keterangan  = trim($_POST['popup_keterangan'] ?? '');
     $is_aktif    = isset($_POST['popup_is_aktif']) ? 1 : 0;
     $urutan      = max(1, (int)($_POST['popup_urutan'] ?? 1));
-    $gambar_path = 'uploads/popup/' . $nama_file;
+    $gambar_path = 'uploads/popup/' . $res_upload['filename'];
 
     // Geser urutan yang sudah ada: jika ada urutan >= $urutan, geser +1 agar urutan sebelumnya turun
     $stmt_shift = $conn->prepare("UPDATE popup_ads SET urutan = urutan + 1 WHERE urutan >= ?");
@@ -612,7 +801,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah_popup']
     if ($stmt_p->execute()) {
         $stmt_p->close();
         normalisasi_urutan_popup($conn);
-        $_SESSION['flash_sukses'] = 'Gambar pop-up berhasil ditambahkan pada urutan ke-' . $urutan . ' (urutan lama yang sama otomatis bergeser turun)!';
+        $_SESSION['flash_sukses'] = 'Gambar pop-up berhasil ditambahkan pada urutan ke-' . $urutan . ' (urutan lama yang sama otomatis bergeser turun)!' . $info_kompresi;
     } else {
         $stmt_p->close();
         @unlink($tujuan);
@@ -642,32 +831,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit_popup']))
         $_SESSION['flash_error'] = 'Data pop-up tidak ditemukan!';
         header("Location: index.php?tab=popup"); exit;
     }
-    $old_urutan  = (int)$old_row['urutan'];
-    $gambar_path = $old_row['gambar'] ?? '';
+    $old_urutan    = (int)$old_row['urutan'];
+    $gambar_path   = $old_row['gambar'] ?? '';
+    $info_kompresi = '';
 
-    // Proses ganti gambar jika ada file baru
-    if (isset($_FILES['popup_gambar']) && $_FILES['popup_gambar']['error'] === UPLOAD_ERR_OK) {
-        $file_tmp  = $_FILES['popup_gambar']['tmp_name'];
-        $file_name = $_FILES['popup_gambar']['name'];
-        $file_size = $_FILES['popup_gambar']['size'];
-        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-        if (!in_array($file_ext, ['jpg','jpeg','png','webp'])) {
-            $_SESSION['flash_error'] = 'Format tidak valid! Gunakan JPG, PNG, atau WEBP.';
-            header("Location: index.php?tab=popup"); exit;
+    // Proses ganti gambar jika ada file baru (otomatis kompres < 1MB)
+    if (isset($_FILES['popup_gambar']) && $_FILES['popup_gambar']['error'] !== UPLOAD_ERR_NO_FILE) {
+        $res_upload = proses_upload_dan_kompres_gambar($_FILES['popup_gambar'], $popup_upload_dir, 'popup');
+        if (!$res_upload['success']) {
+            $_SESSION['flash_error'] = $res_upload['error'];
+            header("Location: index.php?tab=popup&edit_popup=" . $pid); exit;
         }
-        if ($file_size > 5 * 1024 * 1024) {
-            $_SESSION['flash_error'] = 'Ukuran file terlalu besar! Maksimal 5MB.';
-            header("Location: index.php?tab=popup"); exit;
+        // Hapus gambar lama jika dari folder uploads/popup
+        if (!empty($gambar_path) && str_starts_with($gambar_path, 'uploads/popup/')) {
+            $old_path = __DIR__ . '/../' . $gambar_path;
+            if (file_exists($old_path)) @unlink($old_path);
         }
-        $nama_file   = 'popup-' . time() . '-' . uniqid() . '.' . $file_ext;
-        $tujuan      = $popup_upload_dir . $nama_file;
-        if (move_uploaded_file($file_tmp, $tujuan)) {
-            // Hapus gambar lama jika dari folder uploads/popup
-            if (!empty($gambar_path) && str_starts_with($gambar_path, 'uploads/popup/')) {
-                $old_path = __DIR__ . '/../' . $gambar_path;
-                if (file_exists($old_path)) @unlink($old_path);
-            }
-            $gambar_path = 'uploads/popup/' . $nama_file;
+        $gambar_path = 'uploads/popup/' . $res_upload['filename'];
+        if (!empty($res_upload['compressed'])) {
+            $info_kompresi = ' (Gambar otomatis dikompres dari ' . format_ukuran_file($res_upload['original_size']) . ' menjadi ' . format_ukuran_file($res_upload['final_size']) . ')';
         }
     }
 
@@ -695,7 +877,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit_popup']))
     if ($stmt_upd->execute()) {
         $stmt_upd->close();
         normalisasi_urutan_popup($conn);
-        $_SESSION['flash_sukses'] = 'Pop-up berhasil diperbarui dan urutan otomatis diselaraskan!';
+        $_SESSION['flash_sukses'] = 'Pop-up berhasil diperbarui dan urutan otomatis diselaraskan!' . $info_kompresi;
     } else {
         $stmt_upd->close();
         $_SESSION['flash_error'] = 'Gagal memperbarui: ' . $conn->error;
@@ -2352,7 +2534,7 @@ $stmt_cp_val->close();
                       <polyline points="21 15 16 10 5 21"></polyline>
                     </svg>
                     <p style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Klik untuk Memilih Gambar</p>
-                    <p style="font-size:0.75rem;color:var(--gray-600);">JPG, JPEG, PNG, atau WEBP (Maks 5MB)</p>
+                    <p style="font-size:0.75rem;color:var(--gray-600);">JPG, JPEG, PNG, atau WEBP (Maks 20MB, otomatis dikompres &lt; 1MB)</p>
                   </div>
                   <div class="upload-preview-area" id="previewArea" style="display:none;">
                     <img id="imgPreview" src="" alt="Preview">
@@ -2449,7 +2631,7 @@ $stmt_cp_val->close();
                         <polyline points="21 15 16 10 5 21"></polyline>
                       </svg>
                       <p style="font-weight:600;font-size:0.9rem;margin-bottom:4px;">Klik untuk Memilih Gambar</p>
-                      <p style="font-size:0.75rem;color:var(--gray-600);">JPG, JPEG, PNG, atau WEBP (Maks 5MB)</p>
+                      <p style="font-size:0.75rem;color:var(--gray-600);">JPG, JPEG, PNG, atau WEBP (Maks 20MB, otomatis dikompres &lt; 1MB)</p>
                     </div>
                     <div class="upload-preview-area" id="previewArea" style="display:none;">
                       <img id="imgPreview" src="" alt="Preview">
@@ -3041,7 +3223,7 @@ $stmt_cp_val->close();
                       <polyline points="21 15 16 10 5 21"></polyline>
                     </svg>
                     <strong style="color:var(--primary); font-size:0.9rem; display:block;">Pilih Gambar</strong>
-                    <span style="font-size:0.78rem; color:var(--gray-600);">Format JPG, PNG, atau WebP (Maks 5MB)</span>
+                    <span style="font-size:0.78rem; color:var(--gray-600);">Format JPG, PNG, atau WebP (Maks 20MB, otomatis dikompres &lt; 1MB)</span>
                   </div>
 
                   <!-- Live Preview Gambar Baru -->
@@ -3262,7 +3444,7 @@ $stmt_cp_val->close();
                       <circle cx="12" cy="7" r="4"></circle>
                     </svg>
                     <strong style="color:var(--primary); font-size:0.9rem; display:block;">Pilih Foto Pejabat</strong>
-                    <span style="font-size:0.78rem; color:var(--gray-600);">Format JPG, PNG, atau WebP (Maks 5MB)</span>
+                    <span style="font-size:0.78rem; color:var(--gray-600);">Format JPG, PNG, atau WebP (Maks 20MB, otomatis dikompres &lt; 1MB)</span>
                   </div>
 
                   <div id="pejabatPreviewArea" style="display:none; margin-top:8px;">
@@ -3438,13 +3620,19 @@ $stmt_cp_val->close();
       const img = document.getElementById('imgPreview');
 
       if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 20 * 1024 * 1024) {
+          alert('Ukuran gambar terlalu besar! Maksimal input 20MB.');
+          input.value = '';
+          return;
+        }
         const reader = new FileReader();
         reader.onload = function(e) {
           img.src = e.target.result;
           previewArea.style.display = 'block';
           if (placeholder) placeholder.style.display = 'none';
         }
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
       }
     }
 
@@ -3467,8 +3655,8 @@ $stmt_cp_val->close();
 
       if (input.files && input.files[0]) {
         const file = input.files[0];
-        if (file.size > 5 * 1024 * 1024) {
-          alert('Ukuran gambar terlalu besar! Maksimal 5MB.');
+        if (file.size > 20 * 1024 * 1024) {
+          alert('Ukuran gambar terlalu besar! Maksimal input 20MB.');
           input.value = '';
           return;
         }
@@ -3551,8 +3739,8 @@ $stmt_cp_val->close();
 
       if (input.files && input.files[0]) {
         const file = input.files[0];
-        if (file.size > 5 * 1024 * 1024) {
-          alert('Ukuran foto terlalu besar! Maksimal 5MB.');
+        if (file.size > 20 * 1024 * 1024) {
+          alert('Ukuran foto terlalu besar! Maksimal input 20MB.');
           input.value = '';
           return;
         }
