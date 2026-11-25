@@ -1714,6 +1714,13 @@ $stmt_cp_val->close();
       background: #fafaf5;
     }
 
+    .upload-box.drag-over {
+      border-color: var(--primary);
+      background: rgba(10, 36, 99, 0.06);
+      box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.2);
+      transform: scale(1.01);
+    }
+
     .upload-box input[type="file"] {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -3621,6 +3628,13 @@ $stmt_cp_val->close();
 
       if (input.files && input.files[0]) {
         const file = input.files[0];
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!allowedTypes.includes(file.type) && !['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+          alert('Format gambar tidak valid! Gunakan JPG, JPEG, PNG, atau WEBP.');
+          input.value = '';
+          return;
+        }
         if (file.size > 20 * 1024 * 1024) {
           alert('Ukuran gambar terlalu besar! Maksimal input 20MB.');
           input.value = '';
@@ -3635,6 +3649,55 @@ $stmt_cp_val->close();
         reader.readAsDataURL(file);
       }
     }
+
+    // Drag to Upload khusus pada Manajemen Berita (Tambah & Edit Berita)
+    (function initBeritaDragUpload() {
+      const dropArea = document.getElementById('dropArea');
+      const gambarInput = document.getElementById('gambarInput');
+      if (!dropArea || !gambarInput) return;
+
+      // Cegah browser membuka file jika terlepas sedikit di luar kotak pada form berita
+      ['dragover', 'drop'].forEach(function(evtName) {
+        window.addEventListener(evtName, function(e) {
+          e.preventDefault();
+        });
+      });
+
+      ['dragenter', 'dragover'].forEach(function(evtName) {
+        dropArea.addEventListener(evtName, function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropArea.classList.add('drag-over');
+        });
+      });
+
+      dropArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!dropArea.contains(e.relatedTarget)) {
+          dropArea.classList.remove('drag-over');
+        }
+      });
+
+      dropArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        dropArea.classList.remove('drag-over');
+
+        const files = e.dataTransfer ? e.dataTransfer.files : null;
+        if (!files || files.length === 0) {
+          alert('Silakan lepaskan file gambar langsung dari komputer/perangkat Anda.');
+          return;
+        }
+
+        const file = files[0];
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        gambarInput.files = dt.files;
+
+        previewImage(gambarInput);
+      });
+    })();
 
     function openImageModal(src) {
       const modal = document.getElementById('imageModal');
