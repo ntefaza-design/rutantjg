@@ -40,6 +40,25 @@ $stmt_pop = $conn->prepare("SELECT * FROM popup_ads WHERE is_aktif = 1 ORDER BY 
 $stmt_pop->execute();
 $popup_ads_rows = $stmt_pop->get_result()->fetch_all(MYSQLI_ASSOC);
 $stmt_pop->close();
+
+// Ambil daftar pejabat struktural yang aktif
+$pejabat_kepala_rows = [];
+$pejabat_grid_rows = [];
+if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
+    if ($chk_pj_tbl->num_rows > 0) {
+        $stmt_pj = $conn->prepare("SELECT * FROM pejabat_struktural WHERE is_aktif = 1 ORDER BY is_kepala DESC, urutan ASC, id ASC");
+        $stmt_pj->execute();
+        $all_pejabat = $stmt_pj->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt_pj->close();
+        foreach ($all_pejabat as $pj_item) {
+            if ((int)$pj_item['is_kepala'] === 1) {
+                $pejabat_kepala_rows[] = $pj_item;
+            } else {
+                $pejabat_grid_rows[] = $pj_item;
+            }
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -312,80 +331,76 @@ $stmt_pop->close();
         <p class="section-desc">Pejabat struktural yang memimpin dan mengelola Rutan Tanjung Kelas IIB</p>
       </div>
 
+      <?php foreach ($pejabat_kepala_rows as $pk):
+        $pk_has_foto = !empty($pk['foto']) && file_exists(__DIR__ . '/' . $pk['foto']);
+        $pk_src = $pk_has_foto ? htmlspecialchars($pk['foto']) . '?v=' . filemtime(__DIR__ . '/' . $pk['foto']) : '';
+      ?>
       <!-- Kepala Rutan (featured) -->
       <div class="pejabat-ketua-wrap">
         <div class="pejabat-ketua-card">
           <div class="pejabat-ketua-avatar">
             <div class="avatar-ring"></div>
             <div class="avatar-inner">
-              <img src="Foto Pejabat/raymond andika girsang.png?v=<?= filemtime(__DIR__ . '/Foto Pejabat/raymond andika girsang.png') ?>" alt="Raymond Andika Girsang"
-                onclick="openLightbox(this.src, 'Raymon Andika Girsang, A.Md.IP., S.H., M.H. — Kepala Rutan')"
-                style="width:190px;height:190px;object-fit:cover;border-radius:50%;cursor:zoom-in;transition:transform .2s;"
-                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
+              <?php if ($pk_has_foto): ?>
+                <img src="<?= $pk_src ?>" alt="<?= htmlspecialchars($pk['nama']) ?>"
+                  onclick="openLightbox(this.src, <?= htmlspecialchars(json_encode($pk['nama'] . ' - ' . $pk['jabatan']), ENT_QUOTES, 'UTF-8') ?>)"
+                  style="width:190px;height:190px;object-fit:cover;border-radius:50%;cursor:zoom-in;transition:transform .2s;"
+                  onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
+              <?php else: ?>
+                <div style="width:190px;height:190px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, var(--primary-dark), var(--primary-light));color:var(--gold);">
+                  <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+              <?php endif; ?>
             </div>
           </div>
           <div class="pejabat-ketua-info">
-            <span class="jabatan-tag ketua-tag">Kepala Rutan</span>
-            <h3 class="pejabat-name">RAYMON ANDIKA GIRSANG, A.Md.IP., S.H., M.H.</h3>
-            <p class="pejabat-desc">Memimpin dan mengkoordinasikan seluruh kegiatan penyelenggaraan tugas dan fungsi
-              Rumah Tahanan Negara Tanjung Kelas IIB sesuai peraturan perundang-undangan yang berlaku.</p>
+            <span class="jabatan-tag ketua-tag"><?= htmlspecialchars($pk['jabatan']) ?></span>
+            <h3 class="pejabat-name"><?= htmlspecialchars($pk['nama']) ?></h3>
+            <?php if (!empty($pk['deskripsi'])): ?>
+              <p class="pejabat-desc"><?= nl2br(htmlspecialchars($pk['deskripsi'])) ?></p>
+            <?php endif; ?>
           </div>
         </div>
       </div>
+      <?php endforeach; ?>
 
-      <!-- 3 Pejabat Struktural -->
+      <!-- Pejabat Struktural Grid -->
+      <?php if (!empty($pejabat_grid_rows)): ?>
       <div class="pejabat-grid">
-        <div class="pejabat-card" id="pejabat-1">
+        <?php foreach ($pejabat_grid_rows as $idx_pg => $pg):
+          $pg_has_foto = !empty($pg['foto']) && file_exists(__DIR__ . '/' . $pg['foto']);
+          $pg_src = $pg_has_foto ? htmlspecialchars($pg['foto']) . '?v=' . filemtime(__DIR__ . '/' . $pg['foto']) : '';
+        ?>
+        <div class="pejabat-card" id="pejabat-<?= (int)$pg['id'] ?>">
           <div class="pejabat-avatar">
             <div class="avatar-bg">
-              <img src="foto pejabat/AL MUQTADIR PASYA, S.Tr.Pas..png" alt="Al Muqtadir Pasya"
-                onclick="openLightbox(this.src, 'Al Muqtadir Pasya, S.Tr.Pas. — Kasubsi Pelayanan Tahanan')"
-                style="width:150px;height:150px;object-fit:cover;border-radius:50%;cursor:zoom-in;transition:transform .2s;"
-                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
+              <?php if ($pg_has_foto): ?>
+                <img src="<?= $pg_src ?>" alt="<?= htmlspecialchars($pg['nama']) ?>"
+                  onclick="openLightbox(this.src, <?= htmlspecialchars(json_encode($pg['nama'] . ' - ' . $pg['jabatan']), ENT_QUOTES, 'UTF-8') ?>)"
+                  style="width:150px;height:150px;object-fit:cover;border-radius:50%;cursor:zoom-in;transition:transform .2s;"
+                  onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
+              <?php else: ?>
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="1.6">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              <?php endif; ?>
             </div>
           </div>
           <div class="pejabat-info">
-            <span class="jabatan-tag">Kasubsi Pelayanan Tahanan</span>
-            <h4 class="pejabat-name-sm">Al Muqtadir Pasya, S.Tr.Pas.</h4>
-            <p class="pejabat-desc-sm">Mengelola dan mengkoordinasikan pelayanan terhadap tahanan meliputi pendaftaran,
-              perawatan, dan administrasi tahanan.</p>
+            <span class="jabatan-tag"><?= htmlspecialchars($pg['jabatan']) ?></span>
+            <h4 class="pejabat-name-sm"><?= htmlspecialchars($pg['nama']) ?></h4>
+            <?php if (!empty($pg['deskripsi'])): ?>
+              <p class="pejabat-desc-sm"><?= nl2br(htmlspecialchars($pg['deskripsi'])) ?></p>
+            <?php endif; ?>
           </div>
         </div>
-
-        <div class="pejabat-card" id="pejabat-2">
-          <div class="pejabat-avatar">
-            <div class="avatar-bg">
-              <img src="foto pejabat/MUHAMMAD ARIEF RAKHMAN.png" alt="Muhammad Arief Rakhman"
-                onclick="openLightbox(this.src, 'Muhammad Arief Rakhman — Kasubsi Kesatuan Pengamanan Rutan')"
-                style="width:150px;height:150px;object-fit:cover;border-radius:50%;cursor:zoom-in;transition:transform .2s;"
-                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
-            </div>
-          </div>
-          <div class="pejabat-info">
-            <span class="jabatan-tag">Kasubsi Kesatuan Pengamanan Rutan</span>
-            <h4 class="pejabat-name-sm">Muhammad Arief Rakhman</h4>
-            <p class="pejabat-desc-sm">Bertanggung jawab atas keamanan, ketertiban, dan pengawasan di lingkungan Rutan
-              Tanjung Kelas IIB.</p>
-          </div>
-        </div>
-
-        <div class="pejabat-card" id="pejabat-3">
-          <div class="pejabat-avatar">
-            <div class="avatar-bg">
-              <img src="foto pejabat/MASRIPANI, S.E., M.M..png" alt="Masripani"
-                onclick="openLightbox(this.src, 'Masripani, S.E., M.M. — Kasubsi Pengelolaan')"
-                style="width:150px;height:150px;object-fit:cover;border-radius:50%;cursor:zoom-in;transition:transform .2s;"
-                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" />
-            </div>
-          </div>
-          <div class="pejabat-info">
-            <span class="jabatan-tag">Kasubsi Pengelolaan</span>
-            <h4 class="pejabat-name-sm">Masripani, S.E., M.M.</h4>
-            <p class="pejabat-desc-sm">Mengelola urusan administrasi umum, kepegawaian, keuangan, dan tata usaha Rutan
-              Tanjung Kelas IIB.</p>
-          </div>
-        </div>
+        <?php endforeach; ?>
       </div>
+      <?php endif; ?>
     </div>
   </section>
 

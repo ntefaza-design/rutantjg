@@ -252,10 +252,18 @@ if ($id_hapus > 0) {
     exit;
 }
 
-// Ambil total berita & pop-up ads untuk statistik
+// Ambil total berita, pejabat struktural & pop-up ads untuk statistik
 $stat_berita = $conn->query("SELECT COUNT(*) as total FROM berita")->fetch_assoc()['total'] ?? 0;
 $stat_popup_aktif = $conn->query("SELECT COUNT(*) as total FROM popup_ads WHERE is_aktif = 1")->fetch_assoc()['total'] ?? 0;
 $stat_popup_total = $conn->query("SELECT COUNT(*) as total FROM popup_ads")->fetch_assoc()['total'] ?? 0;
+$stat_pejabat_aktif = 0;
+$stat_pejabat_total = 0;
+if ($chk_pj = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
+    if ($chk_pj->num_rows > 0) {
+        $stat_pejabat_aktif = $conn->query("SELECT COUNT(*) as total FROM pejabat_struktural WHERE is_aktif = 1")->fetch_assoc()['total'] ?? 0;
+        $stat_pejabat_total = $conn->query("SELECT COUNT(*) as total FROM pejabat_struktural")->fetch_assoc()['total'] ?? 0;
+    }
+}
 
 // Ambil data untuk form edit jika action=edit
 $data_edit = null;
@@ -274,9 +282,267 @@ if ($action === 'edit' && $edit_id > 0) {
 }
 
 // ==========================================
-// PENGATURAN TAB (berita | jadwal | popup)
+// PENGATURAN TAB (berita | jadwal | popup | pejabat)
 // ==========================================
 $tab = $_GET['tab'] ?? 'berita';
+
+// ==========================================
+// PROSES CRUD: PEJABAT STRUKTURAL
+// ==========================================
+$pejabat_upload_dir = __DIR__ . '/../uploads/pejabat/';
+if (!is_dir($pejabat_upload_dir)) {
+    mkdir($pejabat_upload_dir, 0755, true);
+}
+
+// Pastikan tabel pejabat_struktural tersedia
+$conn->query("CREATE TABLE IF NOT EXISTS `pejabat_struktural` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `nama` VARCHAR(150) NOT NULL,
+  `jabatan` VARCHAR(150) NOT NULL,
+  `deskripsi` TEXT DEFAULT NULL,
+  `foto` VARCHAR(255) DEFAULT NULL,
+  `is_kepala` TINYINT(1) DEFAULT 0,
+  `is_aktif` TINYINT(1) DEFAULT 1,
+  `urutan` INT DEFAULT 1,
+  `dibuat_pada` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `diperbarui_pada` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+if (!function_exists('normalisasi_urutan_pejabat')) {
+    function normalisasi_urutan_pejabat($conn) {
+        foreach ([1, 0] as $kepala_flag) {
+            $stmt_sel = $conn->prepare("SELECT id FROM pejabat_struktural WHERE is_kepala = ? ORDER BY urutan ASC, id ASC");
+            $stmt_sel->bind_param("i", $kepala_flag);
+            $stmt_sel->execute();
+            $res = $stmt_sel->get_result();
+            if ($res) {
+                $seq = 1;
+                $stmt_u = $conn->prepare("UPDATE pejabat_struktural SET urutan = ? WHERE id = ?");
+                while ($row = $res->fetch_assoc()) {
+                    $stmt_u->bind_param("ii", $seq, $row['id']);
+                    $stmt_u->execute();
+                    $seq++;
+                }
+                $stmt_u->close();
+            }
+            $stmt_sel->close();
+        }
+    }
+}
+
+// Tambah Pejabat Struktural
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_tambah_pejabat'])) {
+    $pj_nama      = trim($_POST['pejabat_nama'] ?? '');
+    $pj_jabatan   = trim($_POST['pejabat_jabatan'] ?? '');
+    $pj_deskripsi = trim($_POST['pejabat_deskripsi'] ?? '');
+    $pj_is_kepala = (isset($_POST['pejabat_is_kepala']) && (int)$_POST['pejabat_is_kepala'] === 1) ? 1 : 0;
+    $pj_is_aktif  = isset($_POST['pejabat_is_aktif']) ? 1 : 0;
+    $pj_urutan    = max(1, (int)($_POST['pejabat_urutan'] ?? 1));
+
+    if (empty($pj_nama) || empty($pj_jabatan)) {
+        $_SESSION['flash_error'] = 'Nama lengkap dan jabatan pejabat wajib diisi!';
+        header("Location: index.php?tab=pejabat");
+        exit;
+    }
+
+    $foto_path = '';
+    if (isset($_FILES['pejabat_foto']) && $_FILES['pejabat_foto']['error'] === UPLOAD_ERR_OK) {
+        $file_tmp  = $_FILES['pejabat_foto']['tmp_name'];
+        $file_name = $_FILES['pejabat_foto']['name'];
+        $file_size = $_FILES['pejabat_foto']['size'];
+        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+
+        if (!in_array($file_ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+            $_SESSION['flash_error'] = 'Format foto tidak valid! Gunakan JPG, PNG, atau WEBP.';
+            header("Location: index.php?tab=pejabat");
+            exit;
+        }
+        if ($file_size > 5 * 1024 * 1024) {
+            $_SESSION['flash_error'] = 'Ukuran foto terlalu besar! Maksimal 5MB.';
+            header("Location: index.php?tab=pejabat");
+            exit;
+        }
+        $nama_file = 'pejabat-' . time() . '-' . uniqid() . '.' . $file_ext;
+        $tujuan    = $pejabat_upload_dir . $nama_file;
+        if (!move_uploaded_file($file_tmp, $tujuan)) {
+            $_SESSION['flash_error'] = 'Gagal mengunggah foto pejabat ke server.';
+            header("Location: index.php?tab=pejabat");
+            exit;
+        }
+        $foto_path = 'uploads/pejabat/' . $nama_file;
+    }
+
+    // Geser urutan di kategori yang sama
+    $stmt_shift = $conn->prepare("UPDATE pejabat_struktural SET urutan = urutan + 1 WHERE is_kepala = ? AND urutan >= ?");
+    $stmt_shift->bind_param("ii", $pj_is_kepala, $pj_urutan);
+    $stmt_shift->execute();
+    $stmt_shift->close();
+
+    $stmt_ins = $conn->prepare("INSERT INTO pejabat_struktural (nama, jabatan, deskripsi, foto, is_kepala, is_aktif, urutan) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt_ins->bind_param("ssssiii", $pj_nama, $pj_jabatan, $pj_deskripsi, $foto_path, $pj_is_kepala, $pj_is_aktif, $pj_urutan);
+    if ($stmt_ins->execute()) {
+        $stmt_ins->close();
+        normalisasi_urutan_pejabat($conn);
+        $_SESSION['flash_sukses'] = 'Data pejabat struktural baru berhasil ditambahkan!';
+    } else {
+        $stmt_ins->close();
+        $_SESSION['flash_error'] = 'Gagal menambahkan data pejabat: ' . $conn->error;
+    }
+    header("Location: index.php?tab=pejabat&t=" . time());
+    exit;
+}
+
+// Edit Pejabat Struktural
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['proses_edit_pejabat'])) {
+    $pj_id        = (int)($_POST['pejabat_id'] ?? 0);
+    $pj_nama      = trim($_POST['pejabat_nama'] ?? '');
+    $pj_jabatan   = trim($_POST['pejabat_jabatan'] ?? '');
+    $pj_deskripsi = trim($_POST['pejabat_deskripsi'] ?? '');
+    $pj_is_kepala = (isset($_POST['pejabat_is_kepala']) && (int)$_POST['pejabat_is_kepala'] === 1) ? 1 : 0;
+    $pj_is_aktif  = isset($_POST['pejabat_is_aktif']) ? 1 : 0;
+    $pj_urutan    = max(1, (int)($_POST['pejabat_urutan'] ?? 1));
+
+    if ($pj_id <= 0 || empty($pj_nama) || empty($pj_jabatan)) {
+        $_SESSION['flash_error'] = 'Data pejabat tidak lengkap atau tidak valid!';
+        header("Location: index.php?tab=pejabat");
+        exit;
+    }
+
+    $stmt_old = $conn->prepare("SELECT foto, urutan, is_kepala FROM pejabat_struktural WHERE id = ? LIMIT 1");
+    $stmt_old->bind_param("i", $pj_id);
+    $stmt_old->execute();
+    $old_pj = $stmt_old->get_result()->fetch_assoc();
+    $stmt_old->close();
+
+    if (!$old_pj) {
+        $_SESSION['flash_error'] = 'Data pejabat yang ingin diedit tidak ditemukan!';
+        header("Location: index.php?tab=pejabat");
+        exit;
+    }
+
+    $foto_path     = $old_pj['foto'] ?? '';
+    $old_urutan    = (int)$old_pj['urutan'];
+    $old_is_kepala = (int)$old_pj['is_kepala'];
+
+    if (isset($_FILES['pejabat_foto']) && $_FILES['pejabat_foto']['error'] === UPLOAD_ERR_OK) {
+        $file_tmp  = $_FILES['pejabat_foto']['tmp_name'];
+        $file_name = $_FILES['pejabat_foto']['name'];
+        $file_size = $_FILES['pejabat_foto']['size'];
+        $file_ext  = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+
+        if (!in_array($file_ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+            $_SESSION['flash_error'] = 'Format foto tidak valid! Gunakan JPG, PNG, atau WEBP.';
+            header("Location: index.php?tab=pejabat&edit_pejabat=" . $pj_id);
+            exit;
+        }
+        if ($file_size > 5 * 1024 * 1024) {
+            $_SESSION['flash_error'] = 'Ukuran foto terlalu besar! Maksimal 5MB.';
+            header("Location: index.php?tab=pejabat&edit_pejabat=" . $pj_id);
+            exit;
+        }
+        $nama_file = 'pejabat-' . time() . '-' . uniqid() . '.' . $file_ext;
+        $tujuan    = $pejabat_upload_dir . $nama_file;
+        if (move_uploaded_file($file_tmp, $tujuan)) {
+            if (!empty($foto_path) && str_starts_with($foto_path, 'uploads/pejabat/')) {
+                $old_file = __DIR__ . '/../' . $foto_path;
+                if (file_exists($old_file)) @unlink($old_file);
+            }
+            $foto_path = 'uploads/pejabat/' . $nama_file;
+        }
+    }
+
+    // Geser urutan jika berubah
+    if ($pj_is_kepala === $old_is_kepala && $pj_urutan !== $old_urutan) {
+        if ($pj_urutan < $old_urutan) {
+            $stmt_s = $conn->prepare("UPDATE pejabat_struktural SET urutan = urutan + 1 WHERE is_kepala = ? AND urutan >= ? AND urutan < ? AND id != ?");
+            $stmt_s->bind_param("iiii", $pj_is_kepala, $pj_urutan, $old_urutan, $pj_id);
+            $stmt_s->execute();
+            $stmt_s->close();
+        } else {
+            $stmt_s = $conn->prepare("UPDATE pejabat_struktural SET urutan = urutan - 1 WHERE is_kepala = ? AND urutan > ? AND urutan <= ? AND id != ?");
+            $stmt_s->bind_param("iiii", $pj_is_kepala, $old_urutan, $pj_urutan, $pj_id);
+            $stmt_s->execute();
+            $stmt_s->close();
+        }
+    } elseif ($pj_is_kepala !== $old_is_kepala) {
+        $stmt_s = $conn->prepare("UPDATE pejabat_struktural SET urutan = urutan + 1 WHERE is_kepala = ? AND urutan >= ? AND id != ?");
+        $stmt_s->bind_param("iii", $pj_is_kepala, $pj_urutan, $pj_id);
+        $stmt_s->execute();
+        $stmt_s->close();
+    }
+
+    $stmt_upd = $conn->prepare("UPDATE pejabat_struktural SET nama = ?, jabatan = ?, deskripsi = ?, foto = ?, is_kepala = ?, is_aktif = ?, urutan = ? WHERE id = ?");
+    $stmt_upd->bind_param("ssssiiii", $pj_nama, $pj_jabatan, $pj_deskripsi, $foto_path, $pj_is_kepala, $pj_is_aktif, $pj_urutan, $pj_id);
+    if ($stmt_upd->execute()) {
+        $stmt_upd->close();
+        normalisasi_urutan_pejabat($conn);
+        $_SESSION['flash_sukses'] = 'Data pejabat struktural berhasil diperbarui!';
+    } else {
+        $stmt_upd->close();
+        $_SESSION['flash_error'] = 'Gagal memperbarui data pejabat: ' . $conn->error;
+    }
+    header("Location: index.php?tab=pejabat&t=" . time());
+    exit;
+}
+
+// Hapus Pejabat Struktural
+if (isset($_GET['hapus_pejabat']) && $tab === 'pejabat') {
+    $pj_del = (int)$_GET['hapus_pejabat'];
+    if ($pj_del > 0) {
+        $stmt_gd = $conn->prepare("SELECT foto FROM pejabat_struktural WHERE id = ? LIMIT 1");
+        $stmt_gd->bind_param("i", $pj_del);
+        $stmt_gd->execute();
+        $del_row = $stmt_gd->get_result()->fetch_assoc();
+        $stmt_gd->close();
+        if ($del_row && !empty($del_row['foto']) && str_starts_with($del_row['foto'], 'uploads/pejabat/')) {
+            $del_path = __DIR__ . '/../' . $del_row['foto'];
+            if (file_exists($del_path)) @unlink($del_path);
+        }
+        $stmt_del = $conn->prepare("DELETE FROM pejabat_struktural WHERE id = ?");
+        $stmt_del->bind_param("i", $pj_del);
+        if ($stmt_del->execute()) {
+            $stmt_del->close();
+            normalisasi_urutan_pejabat($conn);
+            $_SESSION['flash_sukses'] = 'Data pejabat struktural berhasil dihapus!';
+        } else {
+            $stmt_del->close();
+            $_SESSION['flash_error'] = 'Gagal menghapus data pejabat: ' . $conn->error;
+        }
+    }
+    header("Location: index.php?tab=pejabat&t=" . time());
+    exit;
+}
+
+// Toggle aktif/nonaktif pejabat
+if (isset($_GET['toggle_pejabat']) && $tab === 'pejabat') {
+    $pj_tog = (int)$_GET['toggle_pejabat'];
+    if ($pj_tog > 0) {
+        $stmt_tog = $conn->prepare("UPDATE pejabat_struktural SET is_aktif = 1 - is_aktif WHERE id = ?");
+        $stmt_tog->bind_param("i", $pj_tog);
+        $stmt_tog->execute();
+        $stmt_tog->close();
+        $_SESSION['flash_sukses'] = 'Status tampil pejabat berhasil diubah!';
+    }
+    header("Location: index.php?tab=pejabat&t=" . time());
+    exit;
+}
+
+// Data edit pejabat & daftar semua pejabat
+$pejabat_edit_data = null;
+$pejabat_edit_id   = isset($_GET['edit_pejabat']) ? (int)$_GET['edit_pejabat'] : 0;
+if ($pejabat_edit_id > 0) {
+    $stmt_pe = $conn->prepare("SELECT * FROM pejabat_struktural WHERE id = ? LIMIT 1");
+    $stmt_pe->bind_param("i", $pejabat_edit_id);
+    $stmt_pe->execute();
+    $pejabat_edit_data = $stmt_pe->get_result()->fetch_assoc();
+    $stmt_pe->close();
+    if ($pejabat_edit_data) {
+        $tab = 'pejabat';
+    }
+}
+
+$list_pejabat_q = $conn->query("SELECT * FROM pejabat_struktural ORDER BY is_kepala DESC, urutan ASC, id ASC");
+$list_pejabat_rows = $list_pejabat_q ? $list_pejabat_q->fetch_all(MYSQLI_ASSOC) : [];
 
 // ==========================================
 // PROSES CRUD: POPUP ADS
@@ -845,7 +1111,7 @@ $stmt_cp_val->close();
     /* Top Stats Grid */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
       gap: 18px;
       margin-bottom: 28px;
     }
@@ -1530,6 +1796,57 @@ $stmt_cp_val->close();
       background: rgba(229, 62, 62, 0.18);
     }
 
+    /* Pejabat Struktural Admin Specific Styles */
+    .pejabat-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .badge-pejabat-kepala {
+      background: linear-gradient(135deg, rgba(201, 168, 76, 0.22), rgba(201, 168, 76, 0.1));
+      color: #8a6d1b;
+      border: 1px solid rgba(201, 168, 76, 0.45);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .badge-pejabat-grid {
+      background: rgba(10, 36, 99, 0.08);
+      color: var(--primary);
+      border: 1px solid rgba(10, 36, 99, 0.2);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .pejabat-thumb-circle {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      border: 2px solid rgba(201, 168, 76, 0.45);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .pejabat-thumb-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
     /* ==============================================
        ADMIN RESPONSIVE STYLES
        Desktop (> 1024px), Tablet (768px – 1024px), Mobile (< 768px)
@@ -1736,6 +2053,10 @@ $stmt_cp_val->close();
       .form-container, .news-form {
         padding: 18px 14px !important;
       }
+      .pejabat-meta-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
       .form-input, .form-textarea, select.form-control, input.form-control {
         font-size: 16px !important;
         min-height: 44px;
@@ -1892,6 +2213,21 @@ $stmt_cp_val->close();
       </div>
 
       <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(14, 116, 144, 0.12); color:#0e7490;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <h4>Pejabat Struktural</h4>
+          <div class="stat-value" style="font-size:1.35rem;"><?= $stat_pejabat_aktif ?> <span style="font-size:0.85rem; font-weight:600; color:var(--gray-600);">Aktif (<?= $stat_pejabat_total ?> total)</span></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
         <div class="stat-icon gold">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -1948,6 +2284,15 @@ $stmt_cp_val->close();
           <line x1="12" y1="17" x2="12" y2="21"></line>
         </svg>
         Kelola Pop-up Ads
+      </a>
+      <a href="index.php?tab=pejabat" class="admin-tab-item <?= ($tab === 'pejabat') ? 'active' : '' ?>">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        Kelola Pejabat Struktural
       </a>
     </div>
 
@@ -2811,6 +3156,250 @@ $stmt_cp_val->close();
 
     <?php endif; // Akhir Tab Pop-up Ads ?>
 
+    <!-- ============================================== -->
+    <!-- TAB: KELOLA PEJABAT STRUKTURAL -->
+    <!-- ============================================== -->
+    <?php if ($tab === 'pejabat'): ?>
+
+      <!-- 1. FORM TAMBAH / EDIT PEJABAT STRUKTURAL -->
+      <div class="content-box" style="margin-bottom: 28px;">
+        <div class="content-box-header">
+          <div class="content-box-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <?php if ($pejabat_edit_data): ?>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              <?php else: ?>
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+              <?php endif; ?>
+            </svg>
+            <?= $pejabat_edit_data ? 'Edit Data Pejabat: ' . htmlspecialchars($pejabat_edit_data['nama']) : 'Tambah Pejabat Struktural Baru' ?>
+          </div>
+          <?php if ($pejabat_edit_data): ?>
+            <a href="index.php?tab=pejabat" class="btn-secondary" style="font-size:0.85rem;">
+              ✕ Batal Edit (Tambah Baru)
+            </a>
+          <?php endif; ?>
+        </div>
+
+        <form action="index.php?tab=pejabat" method="POST" enctype="multipart/form-data" class="form-container">
+          <input type="hidden" name="<?= $pejabat_edit_data ? 'proses_edit_pejabat' : 'proses_tambah_pejabat' ?>" value="1">
+          <?php if ($pejabat_edit_data): ?>
+            <input type="hidden" name="pejabat_id" value="<?= (int)$pejabat_edit_data['id'] ?>">
+          <?php endif; ?>
+
+          <div class="form-grid">
+            <div>
+              <div class="form-group">
+                <label class="form-label" for="pejabat_nama">Nama Lengkap &amp; Gelar <span class="req">*</span></label>
+                <input type="text" id="pejabat_nama" name="pejabat_nama" class="form-input" placeholder="Contoh: RAYMON ANDIKA GIRSANG, A.Md.IP., S.H., M.H." value="<?= htmlspecialchars($pejabat_edit_data['nama'] ?? '') ?>" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="pejabat_jabatan">Jabatan Struktural <span class="req">*</span></label>
+                <input type="text" id="pejabat_jabatan" name="pejabat_jabatan" class="form-input" placeholder="Contoh: Kepala Rutan, Kasubsi Pelayanan Tahanan, dll." value="<?= htmlspecialchars($pejabat_edit_data['jabatan'] ?? '') ?>" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="pejabat_deskripsi">Deskripsi Tugas / Profil Singkat</label>
+                <textarea id="pejabat_deskripsi" name="pejabat_deskripsi" class="form-textarea" style="min-height:110px;" placeholder="Tuliskan tugas pokok dan fungsi singkat pejabat..."><?= htmlspecialchars($pejabat_edit_data['deskripsi'] ?? '') ?></textarea>
+                <div class="form-help">Ditampilkan di bawah nama &amp; jabatan pada halaman utama website.</div>
+              </div>
+
+              <div class="pejabat-meta-grid">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" for="pejabat_is_kepala">Posisi Tampilan</label>
+                  <select id="pejabat_is_kepala" name="pejabat_is_kepala" class="form-input">
+                    <option value="0" <?= (isset($pejabat_edit_data) && (int)$pejabat_edit_data['is_kepala'] === 0) ? 'selected' : '' ?>>Pejabat Struktural (Kartu Grid)</option>
+                    <option value="1" <?= (isset($pejabat_edit_data) && (int)$pejabat_edit_data['is_kepala'] === 1) ? 'selected' : '' ?>>Kepala Rutan (Kartu Utama Atas)</option>
+                  </select>
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label" for="pejabat_urutan">Urutan Tampil</label>
+                  <input type="number" id="pejabat_urutan" name="pejabat_urutan" class="form-input" min="1" value="<?= (int)($pejabat_edit_data['urutan'] ?? (count(array_filter($list_pejabat_rows, fn($r) => (int)$r['is_kepala'] === 0)) + 1)) ?>" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                  <label class="form-label">Status Tampil</label>
+                  <div class="switch-toggle-wrap" style="padding-top:6px;">
+                    <label class="switch-toggle">
+                      <input type="checkbox" name="pejabat_is_aktif" value="1" id="pejabatAktifSwitch" <?= (!isset($pejabat_edit_data) || (int)$pejabat_edit_data['is_aktif'] === 1) ? 'checked' : '' ?> onchange="updatePejabatSwitchLabel(this)">
+                      <span class="switch-slider"></span>
+                    </label>
+                    <span class="switch-label-text" id="pejabatSwitchLabelText">
+                      <?= (!isset($pejabat_edit_data) || (int)$pejabat_edit_data['is_aktif'] === 1) ? 'Aktif' : 'Nonaktif' ?>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upload Foto Pejabat & Live Preview -->
+            <div>
+              <div class="form-group">
+                <label class="form-label">
+                  Foto Pejabat <span style="font-weight:400;color:var(--gray-600);">(<?= $pejabat_edit_data ? 'Pilih jika ingin ganti' : 'opsional' ?>)</span>
+                </label>
+                <div class="upload-box" onclick="document.getElementById('pejabatFotoInput').click()" style="padding:20px;">
+                  <input type="file" name="pejabat_foto" id="pejabatFotoInput" accept="image/jpeg,image/png,image/webp" style="display:none;" onchange="previewPejabatImage(this)">
+
+                  <?php if ($pejabat_edit_data && !empty($pejabat_edit_data['foto'])): ?>
+                    <div id="pejabatExistingArea">
+                      <div style="width:130px; height:130px; border-radius:50%; background:linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); border:3px solid rgba(201,168,76,0.45); overflow:hidden; margin:0 auto 10px;">
+                        <img src="../<?= htmlspecialchars($pejabat_edit_data['foto']) ?>?v=<?= time() ?>" alt="Foto Pejabat Saat Ini" style="width:100%; height:100%; object-fit:cover;">
+                      </div>
+                      <span style="font-size:0.78rem; color:var(--gray-600); display:block;">Foto saat ini. Klik di sini untuk mengganti foto.</span>
+                    </div>
+                  <?php endif; ?>
+
+                  <div id="pejabatUploadPlaceholder" style="<?= ($pejabat_edit_data && !empty($pejabat_edit_data['foto'])) ? 'display:none;' : '' ?>">
+                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--primary); margin:0 auto 10px; display:block;">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <strong style="color:var(--primary); font-size:0.9rem; display:block;">Pilih Foto Pejabat</strong>
+                    <span style="font-size:0.78rem; color:var(--gray-600);">Format JPG, PNG, atau WebP (Maks 5MB)</span>
+                  </div>
+
+                  <div id="pejabatPreviewArea" style="display:none; margin-top:8px;">
+                    <div style="width:130px; height:130px; border-radius:50%; background:linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); border:3px solid rgba(201,168,76,0.45); overflow:hidden; margin:0 auto 8px;">
+                      <img id="pejabatImgPreview" src="" alt="Pratinjau Foto" style="width:100%; height:100%; object-fit:cover;">
+                    </div>
+                    <span style="font-size:0.78rem; color:var(--success); font-weight:700;">✓ Pratinjau foto baru terpilih</span>
+                  </div>
+                </div>
+                <div class="form-help">Disarankan menggunakan foto PNG berlatar transparan atau foto potret wajah menghadap depan agar serasi di bingkai lingkaran.</div>
+              </div>
+
+              <div style="margin-top:20px;">
+                <button type="submit" class="btn-primary" style="width:100%; justify-content:center; padding:12px;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                  </svg>
+                  <?= $pejabat_edit_data ? 'Simpan Perubahan Pejabat' : 'Simpan &amp; Tambah Pejabat' ?>
+                </button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- 2. TABEL DAFTAR PEJABAT STRUKTURAL -->
+      <div class="content-box">
+        <div class="content-box-header">
+          <div class="content-box-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            Daftar Pejabat Struktural Rutan Tanjung (<?= count($list_pejabat_rows) ?> Total)
+          </div>
+          <a href="../index.php#pejabat" target="_blank" class="btn-secondary" style="font-size:0.85rem;">
+            Lihat Bagian Pejabat di Website &rarr;
+          </a>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table-news">
+            <thead>
+              <tr>
+                <th style="width:65px; text-align:center;">Urut</th>
+                <th style="width:86px; text-align:center;">Foto</th>
+                <th>Nama &amp; Jabatan</th>
+                <th style="width:175px;">Posisi Tampilan</th>
+                <th>Deskripsi Tugas</th>
+                <th style="width:145px; text-align:center;">Status</th>
+                <th style="width:170px; text-align:center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (!empty($list_pejabat_rows)): ?>
+                <?php foreach ($list_pejabat_rows as $pj):
+                  $pj_foto_url = !empty($pj['foto']) ? '../' . htmlspecialchars($pj['foto']) : '';
+                  $pj_foto_exists = !empty($pj['foto']) && file_exists(__DIR__ . '/../' . $pj['foto']);
+                  $pj_foto_src = $pj_foto_exists ? $pj_foto_url . '?v=' . filemtime(__DIR__ . '/../' . $pj['foto']) : $pj_foto_url;
+                ?>
+                  <tr>
+                    <td style="text-align:center; font-weight:800; color:var(--primary);">
+                      <?= (int)$pj['urutan'] ?>
+                    </td>
+                    <td style="text-align:center;">
+                      <?php if (!empty($pj['foto'])): ?>
+                        <div class="pejabat-thumb-circle" style="margin:0 auto;" onclick="openImageModal('<?= htmlspecialchars($pj_foto_src, ENT_QUOTES) ?>')" title="Klik untuk memperbesar">
+                          <img src="<?= htmlspecialchars($pj_foto_src) ?>" alt="<?= htmlspecialchars($pj['nama']) ?>">
+                        </div>
+                      <?php else: ?>
+                        <div class="pejabat-thumb-circle" style="margin:0 auto; cursor:default;" title="Belum ada foto">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                          </svg>
+                        </div>
+                      <?php endif; ?>
+                    </td>
+                    <td>
+                      <strong style="color:var(--primary-dark); font-size:0.95rem; display:block; margin-bottom:4px;">
+                        <?= htmlspecialchars($pj['nama']) ?>
+                      </strong>
+                      <span class="badge-author"><?= htmlspecialchars($pj['jabatan']) ?></span>
+                    </td>
+                    <td>
+                      <?php if ((int)$pj['is_kepala'] === 1): ?>
+                        <span class="badge-pejabat-kepala">★ Kepala Rutan (Utama)</span>
+                      <?php else: ?>
+                        <span class="badge-pejabat-grid">Pejabat Grid</span>
+                      <?php endif; ?>
+                    </td>
+                    <td style="color:var(--gray-600); font-size:0.86rem; max-width:280px; line-height:1.5;">
+                      <?= !empty($pj['deskripsi']) ? htmlspecialchars(mb_strimwidth($pj['deskripsi'], 0, 120, '...')) : '<span style="color:var(--gray-400);">— Belum ada deskripsi —</span>' ?>
+                    </td>
+                    <td style="text-align:center;">
+                      <a href="index.php?tab=pejabat&toggle_pejabat=<?= (int)$pj['id'] ?>" class="btn-status-toggle <?= (int)$pj['is_aktif'] === 1 ? 'active' : 'inactive' ?>" title="Klik untuk beralih status Aktif / Nonaktif">
+                        <?= (int)$pj['is_aktif'] === 1 ? '● Aktif' : '○ Nonaktif' ?>
+                      </a>
+                    </td>
+                    <td style="text-align:center;">
+                      <div class="action-buttons" style="justify-content:center;">
+                        <a href="index.php?tab=pejabat&edit_pejabat=<?= (int)$pj['id'] ?>" class="btn-action-edit" title="Edit Data Pejabat">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                          Edit
+                        </a>
+                        <a href="index.php?tab=pejabat&hapus_pejabat=<?= (int)$pj['id'] ?>" class="btn-action-delete" title="Hapus Data Pejabat" onclick="return confirmDeletePejabat('index.php?tab=pejabat&hapus_pejabat=<?= (int)$pj['id'] ?>', <?= htmlspecialchars(json_encode($pj['nama']), ENT_QUOTES) ?>, event)">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                          Hapus
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <tr>
+                  <td colspan="7" style="text-align:center; padding:30px; color:var(--gray-600);">
+                    Belum ada data pejabat struktural. Silakan tambahkan data pejabat baru melalui formulir di atas.
+                  </td>
+                </tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    <?php endif; // Akhir Tab Pejabat Struktural ?>
+
   </main>
 
   <!-- Modal Preview Gambar Full Size -->
@@ -2829,7 +3418,7 @@ $stmt_cp_val->close();
           <line x1="14" y1="11" x2="14" y2="17"></line>
         </svg>
       </div>
-      <h3 style="margin:0 0 8px; font-size:1.15rem; color:#1a202c;">Hapus Berita Ini?</h3>
+      <h3 id="deleteModalTitle" style="margin:0 0 8px; font-size:1.15rem; color:#1a202c;">Hapus Berita Ini?</h3>
       <p id="deleteModalJudul" style="font-size:0.9rem; color:#718096; margin:0 0 24px; line-height:1.5; word-break:break-word;"></p>
       <div style="display:flex; gap:12px; justify-content:center;">
         <button type="button" class="btn-secondary" onclick="closeDeleteModal()" style="min-width:100px; padding:9px 18px; cursor:pointer;">Batal</button>
@@ -2925,15 +3514,64 @@ $stmt_cp_val->close();
     function confirmDeleteNews(url, judul, event) {
       if (event) event.preventDefault();
       const modal = document.getElementById('deleteConfirmModal');
+      const titleEl = document.getElementById('deleteModalTitle');
       const judulEl = document.getElementById('deleteModalJudul');
       const btn = document.getElementById('deleteModalConfirmBtn');
       if (modal && btn) {
+        if (titleEl) titleEl.textContent = 'Hapus Berita Ini?';
         if (judulEl) judulEl.textContent = 'Apakah Anda yakin ingin menghapus berita "' + judul + '" secara permanen? File gambar terkait juga akan otomatis dihapus.';
         btn.href = url;
         modal.style.display = 'flex';
         return false;
       }
       return confirm('Apakah Anda yakin ingin menghapus berita ini secara permanen?');
+    }
+
+    function confirmDeletePejabat(url, nama, event) {
+      if (event) event.preventDefault();
+      const modal = document.getElementById('deleteConfirmModal');
+      const titleEl = document.getElementById('deleteModalTitle');
+      const judulEl = document.getElementById('deleteModalJudul');
+      const btn = document.getElementById('deleteModalConfirmBtn');
+      if (modal && btn) {
+        if (titleEl) titleEl.textContent = 'Hapus Data Pejabat?';
+        if (judulEl) judulEl.textContent = 'Apakah Anda yakin ingin menghapus data pejabat "' + nama + '" secara permanen?';
+        btn.href = url;
+        modal.style.display = 'flex';
+        return false;
+      }
+      return confirm('Apakah Anda yakin ingin menghapus data pejabat ini secara permanen?');
+    }
+
+    function previewPejabatImage(input) {
+      const previewArea = document.getElementById('pejabatPreviewArea');
+      const placeholder = document.getElementById('pejabatUploadPlaceholder');
+      const existing = document.getElementById('pejabatExistingArea');
+      const img = document.getElementById('pejabatImgPreview');
+
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Ukuran foto terlalu besar! Maksimal 5MB.');
+          input.value = '';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          img.src = e.target.result;
+          previewArea.style.display = 'block';
+          if (placeholder) placeholder.style.display = 'none';
+          if (existing) existing.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function updatePejabatSwitchLabel(checkbox) {
+      const label = document.getElementById('pejabatSwitchLabelText');
+      if (label) {
+        label.textContent = checkbox.checked ? 'Aktif' : 'Nonaktif';
+      }
     }
 
     function closeDeleteModal() {

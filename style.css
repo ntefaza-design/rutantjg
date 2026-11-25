@@ -1106,7 +1106,9 @@ input, textarea, select { font-family: inherit; }
   color: var(--primary);
   background: rgba(10,36,99,0.08);
   border-color: rgba(10,36,99,0.18);
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 100%;
+  line-height: 1.4;
   letter-spacing: 0.5px;
   padding: 6px 14px;
 }

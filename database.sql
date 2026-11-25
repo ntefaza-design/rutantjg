@@ -137,3 +137,29 @@ INSERT INTO `popup_ads` (`id`, `gambar`, `link_url`, `is_aktif`, `urutan`, `kete
 (6, 'pop up ads/IMG-20261113-WA0167.jpg', '', 1, 6, 'Info Rutan Tanjung 5'),
 (7, 'pop up ads/gratifikasi(1).png', '', 1, 7, 'Tolak Gratifikasi Rutan Tanjung')
 ON DUPLICATE KEY UPDATE `gambar` = VALUES(`gambar`);
+
+-- --------------------------------------------------------
+-- 6. Struktur Tabel `pejabat_struktural`
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `pejabat_struktural` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `nama` VARCHAR(150) NOT NULL,
+  `jabatan` VARCHAR(150) NOT NULL,
+  `deskripsi` TEXT DEFAULT NULL,
+  `foto` VARCHAR(255) DEFAULT NULL,
+  `is_kepala` TINYINT(1) DEFAULT 0,
+  `is_aktif` TINYINT(1) DEFAULT 1,
+  `urutan` INT DEFAULT 1,
+  `dibuat_pada` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `diperbarui_pada` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+-- Data Awal `pejabat_struktural`
+-- --------------------------------------------------------
+INSERT INTO `pejabat_struktural` (`id`, `nama`, `jabatan`, `deskripsi`, `foto`, `is_kepala`, `is_aktif`, `urutan`) VALUES
+(1, 'RAYMON ANDIKA GIRSANG, A.Md.IP., S.H., M.H.', 'Kepala Rutan', 'Memimpin dan mengkoordinasikan seluruh kegiatan penyelenggaraan tugas dan fungsi Rumah Tahanan Negara Tanjung Kelas IIB sesuai peraturan perundang-undangan yang berlaku.', 'Foto Pejabat/raymond andika girsang.png', 1, 1, 1),
+(2, 'Al Muqtadir Pasya, S.Tr.Pas.', 'Kasubsi Pelayanan Tahanan', 'Mengelola dan mengkoordinasikan pelayanan terhadap tahanan meliputi pendaftaran, perawatan, dan administrasi tahanan.', 'Foto Pejabat/AL MUQTADIR PASYA, S.Tr.Pas..png', 0, 1, 1),
+(3, 'Muhammad Arief Rakhman', 'Kasubsi Kesatuan Pengamanan Rutan', 'Bertanggung jawab atas keamanan, ketertiban, dan pengawasan di lingkungan Rutan Tanjung Kelas IIB.', 'Foto Pejabat/MUHAMMAD ARIEF RAKHMAN.png', 0, 1, 2),
+(4, 'Masripani, S.E., M.M.', 'Kasubsi Pengelolaan', 'Mengelola urusan administrasi umum, kepegawaian, keuangan, dan tata usaha Rutan Tanjung Kelas IIB.', 'Foto Pejabat/MASRIPANI, S.E., M.M..png', 0, 1, 3)
+ON DUPLICATE KEY UPDATE `nama` = VALUES(`nama`), `jabatan` = VALUES(`jabatan`);
