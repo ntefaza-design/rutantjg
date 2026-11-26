@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login Pengelola — Rutan Tanjung Kelas IIB</title>
+  <title>Login Pengelola — Rutan Kelas IV Tanjung</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
@@ -346,7 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="login-header">
       <img src="banner/LOGO RUTAN png.png" alt="Logo Rutan Tanjung" class="login-logo">
       <h1 class="login-title">Panel Pengelola</h1>
-      <p class="login-subtitle">Rutan Kelas IIB Tanjung</p>
+      <p class="login-subtitle">Rutan Kelas IV Tanjung</p>
     </div>
 
     <?php if (!empty($error)): ?>
@@ -414,7 +414,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 
     <div class="login-footer">
-      <p>&copy; <?= date('Y') ?> Rutan Tanjung Kelas IIB &bull; Akses Terbatas</p>
+      <p>&copy; <?= date('Y') ?> Rutan Kelas IV Tanjung &bull; Akses Terbatas</p>
     </div>
   </div>
 

@@ -1,7 +1,7 @@
 <?php
 /**
  * admin/index.php
- * Dashboard Admin & CRUD Manajemen Berita Rutan Tanjung Kelas IIB
+ * Dashboard Admin & CRUD Manajemen Berita Rutan Kelas IV Tanjung
  */
 session_start();
 
@@ -2310,7 +2310,7 @@ $stmt_cp_val->close();
       <a href="index.php" class="admin-brand">
         <img src="../banner/LOGO RUTAN png.png" alt="Logo Rutan">
         <div class="admin-brand-text">
-          <h1>RUTAN TANJUNG KELAS IIB</h1>
+          <h1>RUTAN KELAS IV TANJUNG</h1>
           <span>Panel Administrasi Berita & Informasi</span>
         </div>
       </a>
@@ -3617,7 +3617,7 @@ $stmt_cp_val->close();
   </div>
 
   <footer class="admin-footer">
-    <p>&copy; <?= date('Y') ?> Rumah Tahanan Negara Tanjung Kelas IIB &bull; Ditjen Pemasyarakatan &bull; Kemenimipas RI</p>
+    <p>&copy; <?= date('Y') ?> Rumah Tahanan Negara Kelas IV Tanjung &bull; Ditjen Pemasyarakatan &bull; Kemenimipas RI</p>
   </footer>
 
   <script>

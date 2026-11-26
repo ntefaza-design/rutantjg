@@ -66,10 +66,10 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rumah Tahanan Negara Tanjung Kelas IIB — Kemenimipas RI</title>
+  <title>Rumah Tahanan Negara Kelas IV Tanjung — Kemenimipas RI</title>
   <meta name="description"
-    content="Website resmi Rumah Tahanan Negara Tanjung Kelas IIB. Layanan informasi, pengaduan, jadwal kunjungan, dan kontak resmi Rutan Tanjung." />
-  <meta name="keywords" content="Rutan Tanjung, Rumah Tahanan Tanjung, Kelas IIB, Kemenimipas, Ditjenpas, Lapas" />
+    content="Website resmi Rumah Tahanan Negara Kelas IV Tanjung. Layanan informasi, pengaduan, jadwal kunjungan, dan kontak resmi Rutan Kelas IV Tanjung." />
+  <meta name="keywords" content="Rutan Kelas IV Tanjung, Rutan Tanjung, Rumah Tahanan Kelas IV Tanjung, Kelas IV, Kemenimipas, Ditjenpas, Lapas" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -90,8 +90,8 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
             style="object-fit: contain; display: block;" />
         </div>
         <div class="logo-text">
-          <span class="logo-title">RUTAN TANJUNG</span>
-          <span class="logo-sub">Kelas IIB</span>
+          <span class="logo-title">RUTAN KELAS IV</span>
+          <span class="logo-sub">Tanjung</span>
         </div>
       </a>
       <nav class="nav-links" id="navLinks">
@@ -129,7 +129,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
     <div class="hero-bg-overlay"></div>
     <div class="hero-particles" id="particles"></div>
     <div class="container hero-content">
-      <h1 class="hero-title">Rumah Tahanan Negara<br /><span class="hero-title-accent">Tanjung Kelas IIB</span></h1>
+      <h1 class="hero-title">Rumah Tahanan Negara<br /><span class="hero-title-accent">Kelas IV Tanjung</span></h1>
       <p class="hero-desc">Rutan Tanjung bekerja, melayani dengan <span
           style="color: var(--gold); font-weight: 700;">PASTI !!!</span></p>
       <div class="hero-actions">
@@ -191,7 +191,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
       <div class="section-header">
         <span class="section-tag">Profil Instansi</span>
         <h2 class="section-title">Tentang Kami</h2>
-        <p class="section-desc">Mengenal lebih dekat Rumah Tahanan Negara Tanjung Kelas IIB</p>
+        <p class="section-desc">Mengenal lebih dekat Rumah Tahanan Negara Kelas IV Tanjung</p>
       </div>
       <div class="about-grid">
         <div class="about-visual">
@@ -206,16 +206,16 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
         <div class="about-content">
           <h3 class="about-subtitle">Profil Singkat</h3>
           <p class="about-text">
-            Rumah Tahanan Negara (Rutan) Kelas IIB Tanjung merupakan Unit Pelaksana Teknis (UPT) di bidang pemasyarakatan yang berada di bawah naungan Direktorat Jenderal Pemasyarakatan, Kementerian Imigrasi dan Pemasyarakatan Republik Indonesia.
+            Rumah Tahanan Negara (Rutan) Kelas IV Tanjung merupakan Unit Pelaksana Teknis (UPT) di bidang pemasyarakatan yang berada di bawah naungan Direktorat Jenderal Pemasyarakatan, Kementerian Imigrasi dan Pemasyarakatan Republik Indonesia.
           </p>
           <p class="about-text">
-            Berlokasi di Kabupaten Tabalong, Provinsi Kalimantan Selatan, Rutan Kelas IIB Tanjung memiliki tugas dan tanggung jawab dalam melaksanakan pelayanan terhadap tahanan, meliputi pelayanan, perawatan, pengamanan, serta pemenuhan hak-hak tahanan sesuai dengan ketentuan peraturan perundang-undangan yang berlaku.
+            Berlokasi di Kabupaten Tabalong, Provinsi Kalimantan Selatan, Rutan Kelas IV Tanjung memiliki tugas dan tanggung jawab dalam melaksanakan pelayanan terhadap tahanan, meliputi pelayanan, perawatan, pengamanan, serta pemenuhan hak-hak tahanan sesuai dengan ketentuan peraturan perundang-undangan yang berlaku.
           </p>
           <p class="about-text">
-            Dalam pelaksanaan tugas dan fungsinya, Rutan Kelas IIB Tanjung senantiasa berkomitmen untuk mewujudkan penyelenggaraan pemasyarakatan yang profesional, berintegritas, humanis, dan akuntabel. Komitmen tersebut diwujudkan melalui peningkatan kualitas pelayanan publik, penguatan keamanan dan ketertiban, serta penghormatan terhadap hak asasi manusia.
+            Dalam pelaksanaan tugas dan fungsinya, Rutan Kelas IV Tanjung senantiasa berkomitmen untuk mewujudkan penyelenggaraan pemasyarakatan yang profesional, berintegritas, humanis, dan akuntabel. Komitmen tersebut diwujudkan melalui peningkatan kualitas pelayanan publik, penguatan keamanan dan ketertiban, serta penghormatan terhadap hak asasi manusia.
           </p>
           <p class="about-text">
-            Dengan mengedepankan nilai-nilai keadilan, transparansi, akuntabilitas, dan kepastian hukum, Rutan Kelas IIB Tanjung terus berupaya memberikan pelayanan terbaik serta mendukung terwujudnya sistem pemasyarakatan yang semakin maju, berorientasi pada kemanusiaan, dan memberikan manfaat bagi masyarakat.
+            Dengan mengedepankan nilai-nilai keadilan, transparansi, akuntabilitas, dan kepastian hukum, Rutan Kelas IV Tanjung terus berupaya memberikan pelayanan terbaik serta mendukung terwujudnya sistem pemasyarakatan yang semakin maju, berorientasi pada kemanusiaan, dan memberikan manfaat bagi masyarakat.
           </p>
           <div class="about-features">
             <div class="feature-item">
@@ -328,7 +328,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
       <div class="section-header">
         <span class="section-tag">Kepemimpinan</span>
         <h2 class="section-title">Pejabat Struktural</h2>
-        <p class="section-desc">Pejabat struktural yang memimpin dan mengelola Rutan Tanjung Kelas IIB</p>
+        <p class="section-desc">Pejabat struktural yang memimpin dan mengelola Rutan Kelas IV Tanjung</p>
       </div>
 
       <?php foreach ($pejabat_kepala_rows as $pk):
@@ -410,7 +410,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
       <div class="section-header">
         <span class="section-tag">Informasi Penting</span>
         <h2 class="section-title">Jadwal Pelayanan</h2>
-        <p class="section-desc">Waktu dan ketentuan pelayanan di Rutan Tanjung Kelas IIB</p>
+        <p class="section-desc">Waktu dan ketentuan pelayanan di Rutan Kelas IV Tanjung</p>
       </div>
       <!-- Peringatan Perubahan Jadwal -->
       <div class="jadwal-warning-banner" role="alert">
@@ -595,7 +595,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
 <!-- ===== BANNER TOLAK GRATIFIKASI ===== -->
   <section class="section-banner-gratifikasi">
     <img src="banner/tolak gratifikasi panjang.png"
-      alt="Komitmen Bersama Tolak Gratifikasi &amp; Pungli — Rutan Tanjung Kelas IIB" class="banner-gratifikasi-img"
+      alt="Komitmen Bersama Tolak Gratifikasi &amp; Pungli — Rutan Kelas IV Tanjung" class="banner-gratifikasi-img"
       loading="lazy" />
   </section>
 
@@ -606,7 +606,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
       <div class="section-header light">
         <span class="section-tag gold">Hak Anda</span>
         <h2 class="section-title">Pengaduan</h2>
-        <p class="section-desc">Sampaikan pengaduan, saran, dan masukan Anda langsung melalui WhatsApp resmi kami.
+        <p class="section-desc">Sampaikan pengaduan, saran, dan masukan Anda langsung melalui WhatsApp atau Email resmi kami (rutan.tanjung@kemenimipas.go.id).
           Setiap laporan akan ditindaklanjuti dengan serius dan profesional.</p>
       </div>
 
@@ -664,7 +664,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
               <div class="wa-card-title-wrap">
                 <span class="wa-badge">Resmi</span>
                 <h3 class="wa-card-title">WhatsApp Pengaduan</h3>
-                <p class="wa-card-sub">Rutan Tanjung Kelas IIB</p>
+                <p class="wa-card-sub">Rutan Kelas IV Tanjung</p>
               </div>
             </div>
             <div class="wa-number-display" id="wa-number-display">
@@ -684,7 +684,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
                 <button class="wa-quick-btn" onclick="openWA('Pengaduan Lainnya')" id="wa-q5">💬 Lainnya</button>
               </div>
             </div>
-            <a href="https://wa.me/6281241974185?text=Selamat%20Pagi%2C%20Saya%20ingin%20menyampaikan%20pengaduan%20kepada%20Rutan%20Tanjung%20Kelas%20IIB.%0A%0ANama%3A%0AJenis%20Pengaduan%3A%0AUraian%3A"
+            <a href="https://wa.me/6281241974185?text=Selamat%20Pagi%2C%20Saya%20ingin%20menyampaikan%20pengaduan%20kepada%20Rutan%20Kelas%20IV%20Tanjung.%0A%0ANama%3A%0AJenis%20Pengaduan%3A%0AUraian%3A"
               target="_blank" rel="noopener" class="btn-wa-main" id="btn-wa-main">
               <svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
                 <path
@@ -695,6 +695,17 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
               Mulai Chat WhatsApp Sekarang
             </a>
             <p class="wa-privacy-note">🔒 Identitas Anda dijaga kerahasiaannya sesuai peraturan perundang-undangan</p>
+            <div class="wa-email-alt">
+              <span class="wa-email-alt-label">Atau kirim pesan / pengaduan melalui Email Resmi:</span>
+              <a href="https://mail.google.com/mail/?view=cm&fs=1&to=rutan.tanjung@kemenimipas.go.id&su=Pengaduan%20%2F%20Pesan%20Masyarakat%20-%20Rutan%20Kelas%20IV%20Tanjung"
+                target="_blank" rel="noopener noreferrer" class="btn-email-alt">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="M22 6l-10 7L2 6" />
+                </svg>
+                <span>rutan.tanjung@kemenimipas.go.id</span>
+              </a>
+            </div>
           </div>
 
           <!-- Info tambahan -->
@@ -726,7 +737,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
       <div class="section-header">
         <span class="section-tag">Publikasi &amp; Informasi Terkini</span>
         <h2 class="section-title">Sosial Media Kami</h2>
-        <p class="section-desc">Ikuti seluruh kanal media sosial resmi Rumah Tahanan Negara Kelas IIB Tanjung untuk mendapatkan informasi terkini.</p>
+        <p class="section-desc">Ikuti seluruh kanal media sosial resmi Rumah Tahanan Negara Kelas IV Tanjung untuk mendapatkan informasi terkini.</p>
       </div>
 
       <div class="sosmed-banners-list">
@@ -753,7 +764,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
               <div class="sosmed-banner-handle">
                 <h3 class="handle-ig">@rutan_tanjung</h3>
               </div>
-              <p class="sosmed-banner-desc">Akun Instagram Resmi Rumah Tahanan Negara Kelas IIB Tanjung — Ditjen Pemasyarakatan</p>
+              <p class="sosmed-banner-desc">Akun Instagram Resmi Rumah Tahanan Negara Kelas IV Tanjung — Ditjen Pemasyarakatan</p>
             </div>
           </div>
           <div class="sosmed-banner-actions">
@@ -781,7 +792,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
               <div class="sosmed-banner-handle">
                 <h3 class="handle-fb">Rutan Tanjung</h3>
               </div>
-              <p class="sosmed-banner-desc">Halaman Facebook Resmi Rumah Tahanan Negara Kelas IIB Tanjung</p>
+              <p class="sosmed-banner-desc">Halaman Facebook Resmi Rumah Tahanan Negara Kelas IV Tanjung</p>
             </div>
           </div>
           <div class="sosmed-banner-actions">
@@ -808,7 +819,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
               <div class="sosmed-banner-handle">
                 <h3 class="handle-yt">@rutantanjung</h3>
               </div>
-              <p class="sosmed-banner-desc">Saluran YouTube Resmi Rutan Kelas IIB Tanjung — Publikasi Kegiatan &amp; Video Edukasi</p>
+              <p class="sosmed-banner-desc">Saluran YouTube Resmi Rutan Kelas IV Tanjung — Publikasi Kegiatan &amp; Video Edukasi</p>
             </div>
           </div>
           <div class="sosmed-banner-actions">
@@ -835,7 +846,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
               <div class="sosmed-banner-handle">
                 <h3 class="handle-tw">@HumasRutansa</h3>
               </div>
-              <p class="sosmed-banner-desc">Akun Resmi Humas Rumah Tahanan Negara Kelas IIB Tanjung di X (Twitter)</p>
+              <p class="sosmed-banner-desc">Akun Resmi Humas Rumah Tahanan Negara Kelas IV Tanjung di X (Twitter)</p>
             </div>
           </div>
           <div class="sosmed-banner-actions">
@@ -896,6 +907,30 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
               </a>
             </div>
           </div>
+          <div class="kontak-item" id="kontak-email">
+            <div class="kontak-icon" style="color:var(--primary); background:rgba(201,168,76,0.14); border-color:rgba(201,168,76,0.3);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="M22 6l-10 7L2 6" />
+              </svg>
+            </div>
+            <div class="kontak-detail">
+              <strong>Email Resmi</strong>
+              <p>
+                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=rutan.tanjung@kemenimipas.go.id&su=Pesan%20untuk%20Rutan%20Kelas%20IV%20Tanjung"
+                  target="_blank" rel="noopener noreferrer" class="kontak-email-link">rutan.tanjung@kemenimipas.go.id</a>
+              </p>
+              <div class="kontak-email-actions">
+                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=rutan.tanjung@kemenimipas.go.id&su=Pesan%20untuk%20Rutan%20Kelas%20IV%20Tanjung"
+                  target="_blank" rel="noopener noreferrer" class="btn-kontak-email">
+                  <span>✉️ Kirim Pesan via Gmail</span> →
+                </a>
+                <button type="button" class="btn-copy-email" onclick="copyEmailAddress(this)" data-email="rutan.tanjung@kemenimipas.go.id">
+                  Salin Email
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Peta Google Maps Embed -->
@@ -906,13 +941,13 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                 <circle cx="12" cy="10" r="3" />
               </svg>
-              Lokasi Rutan Tanjung Kelas IIB
+              Lokasi Rutan Kelas IV Tanjung
             </div>
             <div class="map-embed-container">
               <iframe
-                src="https://maps.google.com/maps?q=RUTAN+KLAS+IIB+TANJUNG,+Jl.+Jaksa+Agung+Suprapto+No.74,+Tanjung,+Tabalong,+Kalimantan+Selatan&amp;t=&amp;z=16&amp;ie=UTF8&amp;iwloc=&amp;output=embed"
+                src="https://maps.google.com/maps?q=RUTAN+KELAS+IV+TANJUNG,+Jl.+Jaksa+Agung+Suprapto+No.74,+Tanjung,+Tabalong,+Kalimantan+Selatan&amp;t=&amp;z=16&amp;ie=UTF8&amp;iwloc=&amp;output=embed"
                 width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade" title="Peta Lokasi Rutan Tanjung Kelas IIB"></iframe>
+                referrerpolicy="no-referrer-when-downgrade" title="Peta Lokasi Rutan Kelas IV Tanjung"></iframe>
             </div>
             <a href="https://maps.app.goo.gl/13maXL3nUBThc6ro6" target="_blank" rel="noopener"
               class="btn-map-open">
@@ -938,11 +973,11 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
             <img src="banner/LOGO RUTAN png.png" alt="Logo Rutan Tanjung" width="48" height="48"
               style="object-fit: contain; display: block;" />
             <div>
-              <span class="footer-logo-title">RUTAN TANJUNG</span>
-              <span class="footer-logo-sub">Kelas IIB</span>
+              <span class="footer-logo-title">RUTAN KELAS IV</span>
+              <span class="footer-logo-sub">Tanjung</span>
             </div>
           </div>
-          <p class="footer-desc">Rumah Tahanan Negara Tanjung Kelas IIB — Unit Pelaksana Teknis di bawah Ditjen
+          <p class="footer-desc">Rumah Tahanan Negara Kelas IV Tanjung — Unit Pelaksana Teknis di bawah Ditjen
             Pemasyarakatan, Kementerian Imigrasi dan Pemasyarakatan RI.</p>
           <div class="footer-sosmed">
             <a href="https://x.com/HumasRutansa" target="_blank" rel="noopener" id="footer-x" class="footer-sosmed-icon" aria-label="X (Twitter)"><svg viewBox="0 0 24 24"
@@ -965,6 +1000,11 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
                   d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" />
                 <polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#061540" />
               </svg></a>
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=rutan.tanjung@kemenimipas.go.id&su=Pesan%20untuk%20Rutan%20Kelas%20IV%20Tanjung" target="_blank" rel="noopener noreferrer" id="footer-email" class="footer-sosmed-icon" aria-label="Email Resmi" title="Kirim Email ke rutan.tanjung@kemenimipas.go.id"><svg viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="M22 6l-10 7L2 6" />
+              </svg></a>
           </div>
         </div>
         <div class="footer-links-col">
@@ -986,6 +1026,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
             <li><a href="#jadwal">Persyaratan Kunjungan</a></li>
             <li><a href="#pengaduan">Pengaduan Online</a></li>
             <li><a href="#kontak">Hubungi Kami</a></li>
+            <li><a href="https://mail.google.com/mail/?view=cm&fs=1&to=rutan.tanjung@kemenimipas.go.id&su=Pesan%20untuk%20Rutan%20Kelas%20IV%20Tanjung" target="_blank" rel="noopener noreferrer">Email: rutan.tanjung@kemenimipas.go.id</a></li>
           </ul>
         </div>
 
@@ -993,7 +1034,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
     </div>
     <div class="footer-bottom">
       <div class="container footer-bottom-inner">
-        <p>© <span id="footer-year"></span> Rumah Tahanan Negara Tanjung Kelas IIB — Kemenimipas RI. Hak Cipta Dilindungi.</p>
+        <p>© <span id="footer-year"></span> Rumah Tahanan Negara Kelas IV Tanjung — Kemenimipas RI. Hak Cipta Dilindungi.</p>
         <p>Dibangun untuk melayani masyarakat Indonesia dengan penuh dedikasi.</p>
       </div>
     </div>
@@ -1093,6 +1134,22 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
 
   <script src="script.js"></script>
   <script>
+    // Helper Salin Email Resmi
+    function copyEmailAddress(btn) {
+      const email = btn.getAttribute('data-email') || 'rutan.tanjung@kemenimipas.go.id';
+      const originalText = btn.textContent;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(email).then(() => {
+          btn.textContent = 'Email Tersalin!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.classList.remove('copied');
+          }, 2200);
+        });
+      }
+    }
+
     // Lightbox
     function openLightbox(src, caption) {
       const lb = document.getElementById('lightbox');

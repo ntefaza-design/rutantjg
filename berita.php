@@ -44,8 +44,8 @@ $per_page = ($halaman === 1) ? 7 : $grid_per_page;
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Berita & Publikasi — Rutan Tanjung Kelas IIB</title>
-  <meta name="description" content="Berita, kabar, dan publikasi terkini seputar kegiatan, pembinaan, dan pelayanan Rutan Tanjung Kelas IIB Kemenimipas RI." />
+  <title>Berita & Publikasi — Rutan Kelas IV Tanjung</title>
+  <meta name="description" content="Berita, kabar, dan publikasi terkini seputar kegiatan, pembinaan, dan pelayanan Rutan Kelas IV Tanjung Kemenimipas RI." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
@@ -543,8 +543,8 @@ $per_page = ($halaman === 1) ? 7 : $grid_per_page;
           <img src="banner/LOGO RUTAN png.png" alt="Logo Rutan Tanjung" width="62" height="62" style="object-fit:contain;display:block;" />
         </div>
         <div class="logo-text">
-          <span class="logo-title">RUTAN TANJUNG</span>
-          <span class="logo-sub">Kelas IIB</span>
+          <span class="logo-title">RUTAN KELAS IV</span>
+          <span class="logo-sub">Tanjung</span>
         </div>
       </a>
       <nav class="nav-links" id="navLinks">
@@ -591,7 +591,7 @@ $per_page = ($halaman === 1) ? 7 : $grid_per_page;
         Berita &amp; <span>Publikasi</span>
       </h1>
       <p class="berita-hero-desc">
-        Informasi terbaru seputar kegiatan, program pembinaan, dan pelayanan publik di Rutan Kelas IIB Tanjung.
+        Informasi terbaru seputar kegiatan, program pembinaan, dan pelayanan publik di Rutan Kelas IV Tanjung.
       </p>
     </div>
   </section>
@@ -813,7 +813,10 @@ $per_page = ($halaman === 1) ? 7 : $grid_per_page;
   <footer class="footer footer-polos" style="background: var(--primary-dark, #061540); padding: 28px 0; border-top: 1px solid rgba(255,255,255,0.08); text-align: center;">
     <div class="container">
       <p style="margin: 0; font-size: 0.88rem; color: rgba(255,255,255,0.65); letter-spacing: 0.2px;">
-        &copy; <?= date('Y') ?> Rumah Tahanan Negara Tanjung Kelas IIB &mdash; Kemenimipas RI. Hak Cipta Dilindungi.
+        &copy; <?= date('Y') ?> Rumah Tahanan Negara Kelas IV Tanjung &mdash; Kemenimipas RI. Hak Cipta Dilindungi.
+      </p>
+      <p style="margin: 8px 0 0; font-size: 0.84rem; color: rgba(255,255,255,0.6);">
+        Email Resmi: rutan.tanjung@kemenimipas.go.id
       </p>
     </div>
   </footer>

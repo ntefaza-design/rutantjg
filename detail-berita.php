@@ -1,7 +1,7 @@
 <?php
 /**
  * detail-berita.php
- * Halaman Detail Berita & Publikasi Rutan Tanjung Kelas IIB
+ * Halaman Detail Berita & Publikasi Rutan Kelas IV Tanjung
  */
 require_once __DIR__ . '/koneksi.php';
 
@@ -54,8 +54,8 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><?= $berita ? htmlspecialchars($berita['judul']) . ' — Rutan Tanjung Kelas IIB' : 'Berita Tidak Ditemukan — Rutan Tanjung Kelas IIB' ?></title>
-  <meta name="description" content="<?= $berita ? htmlspecialchars(mb_substr(strip_tags($berita['isi']), 0, 160)) : 'Detail berita Rutan Tanjung Kelas IIB' ?>" />
+  <title><?= $berita ? htmlspecialchars($berita['judul']) . ' — Rutan Kelas IV Tanjung' : 'Berita Tidak Ditemukan — Rutan Kelas IV Tanjung' ?></title>
+  <meta name="description" content="<?= $berita ? htmlspecialchars(mb_substr(strip_tags($berita['isi']), 0, 160)) : 'Detail berita Rutan Kelas IV Tanjung' ?>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
@@ -422,6 +422,28 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
       background: #1ebc59;
       transform: scale(1.03);
     }
+    .btn-email-sidebar {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--gold-light);
+      border: 1px solid rgba(201, 168, 76, 0.45);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      margin-top: 10px;
+      transition: all 0.2s;
+      word-break: break-word;
+    }
+    .btn-email-sidebar:hover {
+      background: var(--gold);
+      color: var(--primary-dark);
+      border-color: var(--gold);
+    }
 
     /* Toast Notification */
     #copyToast {
@@ -451,8 +473,8 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
           <img src="banner/LOGO RUTAN png.png" alt="Logo Rutan Tanjung" width="62" height="62" style="object-fit: contain; display: block;" />
         </div>
         <div class="logo-text">
-          <span class="logo-title">RUTAN TANJUNG</span>
-          <span class="logo-sub">Kelas IIB</span>
+          <span class="logo-title">RUTAN KELAS IV</span>
+          <span class="logo-sub">Tanjung</span>
         </div>
       </a>
       <nav class="nav-links" id="navLinks">
@@ -627,9 +649,13 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
 
             <div class="sidebar-widget cta-card-sidebar">
               <h4>Layanan Pengaduan Resmi</h4>
-              <p>Melihat adanya indikasi gratifikasi atau ketidaksesuaian pelayanan? Laporkan langsung ke nomor resmi kami.</p>
+              <p>Melihat adanya indikasi gratifikasi atau ketidaksesuaian pelayanan? Laporkan langsung ke saluran resmi kami.</p>
               <a href="https://wa.me/6282155353594?text=Halo%20Admin%20Rutan%20Tanjung,%20saya%20ingin%20menyampaikan%20pengaduan" target="_blank" rel="noopener" class="btn-wa-sidebar">
                 📲 WhatsApp Pengaduan
+              </a>
+              <br />
+              <a href="https://mail.google.com/mail/?view=cm&fs=1&to=rutan.tanjung@kemenimipas.go.id&su=Pesan%20%2F%20Pengaduan%20-%20Rutan%20Kelas%20IV%20Tanjung" target="_blank" rel="noopener noreferrer" class="btn-email-sidebar">
+                ✉️ rutan.tanjung@kemenimipas.go.id
               </a>
             </div>
           </aside>

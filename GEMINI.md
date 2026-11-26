@@ -1,6 +1,6 @@
-# Panduan & Konvensi Pengembangan — Rutan Tanjung Kelas IIB
+# Panduan & Konvensi Pengembangan — Rutan Kelas IV Tanjung
 
-Dokumen ini berisi aturan teknis, standar responsivitas, dan konvensi proyek yang **wajib diingat dan dipatuhi** untuk seluruh sesi pengembangan website Rutan Tanjung Kelas IIB.
+Dokumen ini berisi aturan teknis, standar responsivitas, dan konvensi proyek yang **wajib diingat dan dipatuhi** untuk seluruh sesi pengembangan website Rutan Kelas IV Tanjung.
 
 ---
 

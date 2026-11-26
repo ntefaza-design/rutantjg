@@ -1,7 +1,7 @@
 <?php
 /**
  * koneksi.php
- * Konfigurasi koneksi database MySQL untuk Rutan Tanjung Kelas IIB
+ * Konfigurasi koneksi database MySQL untuk Rutan Kelas IV Tanjung
  */
 
 $db_host = 'localhost';

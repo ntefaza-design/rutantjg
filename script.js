@@ -483,7 +483,7 @@ function openWA(kategori = '') {
   const salam = getSalamWITA();
   const topik = kategori ? `*${kategori}*` : 'pengaduan';
   const pesan = encodeURIComponent(
-    `${salam},\n\nSaya ingin menyampaikan ${topik} kepada Rutan Tanjung Kelas IIB.\n\nNama     : \nNo. KTP  : \nUraian   : \n\nTerima kasih.`
+    `${salam},\n\nSaya ingin menyampaikan ${topik} kepada Rutan Kelas IV Tanjung.\n\nNama     : \nNo. KTP  : \nUraian   : \n\nTerima kasih.`
   );
   const url = `https://wa.me/${WA_NUMBER}?text=${pesan}`;
   window.open(url, '_blank', 'noopener,noreferrer');
@@ -494,7 +494,7 @@ function updateWAMainButtons() {
   const salam = getSalamWITA();
   document.querySelectorAll('.btn-wa-main').forEach(btn => {
     const pesan = encodeURIComponent(
-      `${salam},\n\nSaya ingin menyampaikan pengaduan kepada Rutan Tanjung Kelas IIB.\n\nNama           : \nJenis Pengaduan: \nUraian         : \n\nTerima kasih.`
+      `${salam},\n\nSaya ingin menyampaikan pengaduan kepada Rutan Kelas IV Tanjung.\n\nNama           : \nJenis Pengaduan: \nUraian         : \n\nTerima kasih.`
     );
     btn.href = `https://wa.me/${WA_NUMBER}?text=${pesan}`;
   });
@@ -514,7 +514,7 @@ function addFloatingWA() {
   const salam = getSalamWITA();
   const floatBtn = document.createElement('a');
   floatBtn.id = 'floating-wa-btn';
-  floatBtn.href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`${salam}, saya ingin menghubungi Rutan Tanjung Kelas IIB.`)}`;
+  floatBtn.href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`${salam}, saya ingin menghubungi Rutan Kelas IV Tanjung.`)}`;
   floatBtn.target = '_blank';
   floatBtn.rel = 'noopener noreferrer';
   floatBtn.setAttribute('aria-label', 'Hubungi via WhatsApp');
@@ -587,7 +587,7 @@ window.addEventListener('scroll', function showFloatWA() {
   }
 }, { passive: true });
 
-console.log('%c🏛️ Rutan Tanjung Kelas IIB', 'color:#c9a84c;font-size:18px;font-weight:bold;');
+console.log('%c🏛️ Rutan Kelas IV Tanjung', 'color:#c9a84c;font-size:18px;font-weight:bold;');
 console.log('%cWebsite Resmi Rumah Tahanan Negara Tanjung', 'color:#0a2463;font-size:12px;');
 console.log('%c📲 WA Pengaduan aktif — Ubah WA_NUMBER di script.js', 'color:#25d366;font-size:11px;');
 
