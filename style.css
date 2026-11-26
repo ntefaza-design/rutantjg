@@ -1135,6 +1135,94 @@ input, textarea, select { font-family: inherit; }
 }
 
 /* ===== JADWAL PELAYANAN ===== */
+.jadwal-warning-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: linear-gradient(135deg, #fffdf5 0%, #fef6dd 100%);
+  border: 1px solid rgba(201, 168, 76, 0.45);
+  border-left: 5px solid var(--gold-dark);
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+}
+
+.jadwal-warning-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.jadwal-warning-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.22), rgba(214, 158, 46, 0.12));
+  border: 1px solid rgba(168, 136, 48, 0.3);
+  color: var(--gold-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.jadwal-warning-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.jadwal-warning-title {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 4px;
+  letter-spacing: 0.1px;
+}
+
+.jadwal-warning-text {
+  font-size: 0.9rem;
+  color: var(--gray-800);
+  line-height: 1.6;
+}
+
+.jadwal-warning-link {
+  color: #b82459;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+.jadwal-warning-link:hover {
+  color: var(--primary);
+}
+
+.jadwal-warning-ig-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  color: var(--white);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 12px 22px;
+  min-height: 44px;
+  border-radius: 50px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 6px 18px rgba(220, 39, 67, 0.28);
+  transition: var(--transition);
+}
+.jadwal-warning-ig-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(220, 39, 67, 0.4);
+  color: var(--white);
+}
+
 .jadwal-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -2862,6 +2950,7 @@ input, textarea, select { font-family: inherit; }
   .vm-divider-line { flex: 1; height: 1px; width: auto; }
   .sorotan-grid { grid-template-columns: repeat(2, 1fr); gap: 28px 24px; }
   .pejabat-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .jadwal-warning-banner { gap: 18px; padding: 18px 20px; }
   .jadwal-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
   .sosmed-channels-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .ig-highlight-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
@@ -2891,6 +2980,18 @@ input, textarea, select { font-family: inherit; }
   .sorotan-grid { grid-template-columns: 1fr; gap: 24px; }
   .sorotan-title { font-size: 1.45rem; }
   .pejabat-grid { grid-template-columns: 1fr; gap: 20px; }
+  .jadwal-warning-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 18px;
+    margin-bottom: 20px;
+  }
+  .jadwal-warning-ig-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
   .jadwal-grid { grid-template-columns: 1fr; gap: 20px; }
   .ig-highlight-grid { grid-template-columns: 1fr; gap: 20px; }
   .sosmed-channels-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
@@ -2944,6 +3045,9 @@ input, textarea, select { font-family: inherit; }
   .btn-primary, .btn-ghost { width: 100%; max-width: 100%; justify-content: center; min-height: 48px; }
 
   .pejabat-ketua-card { padding: 24px 16px; }
+  .jadwal-warning-banner { padding: 16px; }
+  .jadwal-warning-main { gap: 12px; }
+  .jadwal-warning-icon { width: 40px; height: 40px; }
   .modal-box { padding: 30px 18px; }
   .sosmed-channels-grid { grid-template-columns: 1fr; }
   .ig-post-topbar { flex-direction: column; align-items: flex-start; gap: 10px; }

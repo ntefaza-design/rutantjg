@@ -412,6 +412,34 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
         <h2 class="section-title">Jadwal Pelayanan</h2>
         <p class="section-desc">Waktu dan ketentuan pelayanan di Rutan Tanjung Kelas IIB</p>
       </div>
+      <!-- Peringatan Perubahan Jadwal -->
+      <div class="jadwal-warning-banner" role="alert">
+        <div class="jadwal-warning-main">
+          <div class="jadwal-warning-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="24" height="24">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+          </div>
+          <div class="jadwal-warning-content">
+            <div class="jadwal-warning-title">Peringatan: Jadwal Dapat Berubah</div>
+            <p class="jadwal-warning-text">
+              Jadwal pelayanan sewaktu-waktu dapat berubah pada hari tertentu (seperti hari libur nasional, cuti bersama, atau agenda khusus). Harap kunjungi
+              <a href="https://www.instagram.com/rutan_tanjung" target="_blank" rel="noopener noreferrer" class="jadwal-warning-link">Instagram Rutan Tanjung (@rutan_tanjung)</a>
+              untuk informasi pembaruan jadwal terkini.
+            </p>
+          </div>
+        </div>
+        <a href="https://www.instagram.com/rutan_tanjung" target="_blank" rel="noopener noreferrer" class="jadwal-warning-ig-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+          </svg>
+          <span>Kunjungi Instagram ↗</span>
+        </a>
+      </div>
       <div class="jadwal-grid">
         <!-- Jadwal Kunjungan -->
         <div class="jadwal-card" id="jadwal-kunjungan">
