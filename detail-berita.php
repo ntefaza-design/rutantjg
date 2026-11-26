@@ -664,10 +664,10 @@ $current_url = $current_protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI
       <?php else: ?>
         <!-- State jika berita tidak ditemukan -->
         <div class="article-card-main" style="text-align:center;padding:60px 20px;">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--gray-400);margin:0 auto 16px;">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--gray-400);margin:0 auto 16px;">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            <circle cx="12" cy="16" r="1" fill="currentColor" stroke="none"></circle>
           </svg>
           <h2 style="font-size:1.6rem;color:var(--primary-dark);margin-bottom:8px;">Berita Tidak Ditemukan</h2>
           <p style="color:var(--gray-600);margin-bottom:24px;">Maaf, artikel atau publikasi yang Anda cari tidak tersedia atau telah dipindahkan.</p>

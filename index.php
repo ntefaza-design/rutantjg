@@ -416,10 +416,10 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
       <div class="jadwal-warning-banner" role="alert">
         <div class="jadwal-warning-main">
           <div class="jadwal-warning-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="24" height="24">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
+              <line x1="12" y1="9" x2="12" y2="13.5" />
+              <circle cx="12" cy="17.2" r="1.2" fill="currentColor" stroke="none" />
             </svg>
           </div>
           <div class="jadwal-warning-content">
@@ -432,10 +432,10 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
           </div>
         </div>
         <a href="https://www.instagram.com/rutan_tanjung" target="_blank" rel="noopener noreferrer" class="jadwal-warning-ig-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18" aria-hidden="true">
             <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
             <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+            <circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none" />
           </svg>
           <span>Kunjungi Instagram ↗</span>
         </a>
@@ -769,10 +769,10 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
           </div>
           <div class="sosmed-banner-actions">
             <a href="https://www.instagram.com/rutan_tanjung" target="_blank" rel="noopener" class="btn-channel-banner ig" id="btn-ig-profile">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                <circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none" />
               </svg>
               <span>Kunjungi Instagram ↗</span>
             </a>
@@ -989,10 +989,10 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
                 <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
               </svg></a>
             <a href="https://www.instagram.com/rutan_tanjung" target="_blank" rel="noopener" id="footer-ig" class="footer-sosmed-icon" aria-label="Instagram"><svg viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
                 <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                <circle cx="17.5" cy="6.5" r="1.1" fill="currentColor" stroke="none" />
               </svg></a>
             <a href="https://youtube.com/@rutantanjung?si=2dmk1-x2Z7LyfAdb" target="_blank" rel="noopener" id="footer-yt" class="footer-sosmed-icon" aria-label="YouTube"><svg viewBox="0 0 24 24"
                 width="18" height="18">
@@ -1058,7 +1058,12 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
   <div id="popupAds" class="popup-ads-overlay" onclick="closePopupAds()">
     <div class="popup-ads-dialog" onclick="event.stopPropagation()">
       <!-- Tombol Tutup X -->
-      <button class="popup-ads-close" onclick="closePopupAds()" aria-label="Tutup Pop-up">&#x2715;</button>
+      <button class="popup-ads-close" onclick="closePopupAds()" aria-label="Tutup Pop-up">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;pointer-events:none;">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
 
       <!-- Slides Gambar dari database -->
       <div class="popup-ads-slides-wrap">
@@ -1123,12 +1128,18 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
         color:#fff; margin-top:14px; font-size:16px;
         font-weight:600; letter-spacing:1px;
       "></p>
-      <button onclick="closeLightbox()" style="
+      <button onclick="closeLightbox()" aria-label="Tutup Lightbox" style="
         position:absolute; top:-18px; right:-18px;
-        background:rgba(201,168,76,0.9); border:none; border-radius:50%;
-        width:36px; height:36px; font-size:18px; cursor:pointer;
-        color:#0a2463; font-weight:bold; line-height:36px;
-      ">✕</button>
+        background:rgba(201,168,76,0.95); border:2px solid #ffffff; border-radius:50%;
+        width:40px; height:40px; padding:0; line-height:0; cursor:pointer;
+        color:#0a2463; display:flex; align-items:center; justify-content:center;
+        box-shadow:0 4px 16px rgba(0,0,0,0.4);
+      ">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;pointer-events:none;">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
     </div>
   </div>
 

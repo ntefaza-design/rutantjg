@@ -3744,6 +3744,8 @@ select {
   right: -14px;
   width: 40px;
   height: 40px;
+  padding: 0;
+  line-height: 0;
   background: linear-gradient(135deg, var(--gold), var(--gold-dark));
   border: 2px solid #ffffff;
   border-radius: 50%;
@@ -3751,8 +3753,6 @@ select {
   align-items: center;
   justify-content: center;
   color: #0a2463;
-  font-weight: 800;
-  font-size: 20px;
   cursor: pointer;
   z-index: 30;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
@@ -3907,11 +3907,10 @@ select {
   }
 
   .popup-ads-close {
-    top: -8px;
-    right: -8px;
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
+    top: -10px;
+    right: -10px;
+    width: 44px;
+    height: 44px;
   }
 
   .popup-ads-slides-wrap {
