@@ -594,7 +594,7 @@ if ($chk_pj_tbl = $conn->query("SHOW TABLES LIKE 'pejabat_struktural'")) {
   </section>
 <!-- ===== BANNER TOLAK GRATIFIKASI ===== -->
   <section class="section-banner-gratifikasi">
-    <img src="banner/tolak gratifikasi panjang.png"
+    <img src="banner/Gratifikasi.png"
       alt="Komitmen Bersama Tolak Gratifikasi &amp; Pungli — Rutan Kelas IV Tanjung" class="banner-gratifikasi-img"
       loading="lazy" />
   </section>
